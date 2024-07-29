@@ -38,7 +38,7 @@ Contoh dokumentasi API menggunakan Readme.md :
 kalian bisa buka repo url ini : https://github.com/zexoverz/zblog-backend
 disitu ada file README.md, penulisan readme ini ada caranya jadi text yang ditulis didalam nya sama hasil yang diliat di repo tersebut itu berbeda. 
 
-# Gambar
+![image](https://github.com/user-attachments/assets/2ce71919-65b6-4718-8f2e-a968ac629d1e)
 
 ## Postman Collection
 Postman Collection adalah kumpulan permintaan (requests) HTTP yang digunakan untuk menguji dan mengotomatisasi pengujian API. Postman adalah alat yang sangat populer di kalangan pengembang perangkat lunak dan tim pengujian untuk berinteraksi dengan API, mengirim permintaan HTTP, mengambil respons, dan mengelola alur kerja pengujian. Postman Collection adalah cara untuk mengatur permintaan-permintaan ini ke dalam satu unit yang dapat digunakan, dibagi, diekspor, dan diimpor dalam format yang terstruktur.
@@ -63,15 +63,16 @@ Postman Collection adalah alat yang sangat bermanfaat dalam pengembangan dan pen
 
 Contoh Documentation API di postman:
 Jadi selain kalian bisa testing API di postman, hasil collection yang dibuat di postman ini bisa berfungsi untuk dokumentasi API untuk frontend. di collection overview kalian bisa nulis description tentang API kalian 
-# Gambar
+
+![image](https://github.com/user-attachments/assets/ea9bb1a3-f6ba-4db7-a37b-0ef713bb2fa4)
 
 Sebisa mungkin, kalian membuat collection folder yang rapih. agar frontend kita tidak bingung dengan service yang kita buat.
 
-# Gambar
+![image](https://github.com/user-attachments/assets/ff93a8de-09fc-406c-b779-b6c28df4c5a2)
 
 dan cara untuk sharing postman collection kalian itu, tinggal export aja di bagian button tiga ini.
 
-# Gambar
+![image](https://github.com/user-attachments/assets/62b79b7b-4658-4814-b7ab-1a41965eb247)
 
 sisanya kalian bisa ngasih tau ke frontend untuk set up environtment var yang di pake di postman, jadi frontend bisa langsung testing backendnya dengan postman dia sendiri.
 
@@ -95,6 +96,7 @@ Swagger adalah sebuah kerangka kerja yang digunakan untuk mendefinisikan, dokume
 
 Dengan Swagger Documentation, pengembang dapat membuat API yang lebih mudah digunakan, mendokumentasikan API dengan lebih baik, dan memungkinkan pengguna dan pengembang lain untuk mengakses dan memahami API dengan mudah. Ini adalah alat yang sangat bermanfaat dalam pengembangan dan dokumentasi API. 
 
-# Gambar2
+![image](https://github.com/user-attachments/assets/472bf1dd-5895-480e-a9b9-d1ccf312d6f5)
+![image](https://github.com/user-attachments/assets/74d1143b-ece5-493a-bf5a-de05434c93a5)
 
 Untuk swagger documentation kita perlu set up config di backend kita, karena dokumentasi ini base on route API. Contoh Implementasi nya kita akan belajar di next section pas kalian memakai template backend gua.
