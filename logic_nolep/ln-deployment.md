@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/a98b2dea-7ec6-4f01-9825-d94795ac32d8)# Logic Nolep (Optional)
+# Logic Nolep (Optional)
 Disini kita akan coba deploy Inventory System di railway (cloud service) yang kita pakai sebelumnya. Untuk tugas ini opsional jadi kalian boleh ngerjain atau engga juga gapapa.
 
 ## Create New Repo
