@@ -1,4 +1,4 @@
-# Logic Nolep (Optional)
+![image](https://github.com/user-attachments/assets/a98b2dea-7ec6-4f01-9825-d94795ac32d8)# Logic Nolep (Optional)
 Disini kita akan coba deploy Inventory System di railway (cloud service) yang kita pakai sebelumnya. Untuk tugas ini opsional jadi kalian boleh ngerjain atau engga juga gapapa.
 
 ## Create New Repo
@@ -157,38 +157,42 @@ Fungsi createNodejsApp ini adalah membuat server baru dengan versi yang lebih ke
 Setelah changes Set Up Production, jangan lupa push ke repo kalian. 
 disini gua push ke branch master
 
-# Gambar
+![image](https://github.com/user-attachments/assets/49ec93de-935c-456a-891e-a5fe6f118553)
 
 ## Set Up Railway
 Sekarang Server Kita sudah ready di deploy, saatnya set up cloud service untuk mengarahkan CI/CD ke repo yang sudah kita buat.
 
 Buka Dashboard Railway kalian , pilih project yang sudah ada database kalian. coba klik kanan, nanti bakal muncul menu seperti ini : 
 
-# Gambar
+![image](https://github.com/user-attachments/assets/e0662160-dd83-4ec2-824f-9f66c29d0003)
 
 Klik Github Repo, nanti kalian bakal disuruh login memakai github.
 Setelah connect github, railway bisa melihat semua repo kalian. Langsung aja Search repo inventory system kalian.
 
-# Gambar
+![image](https://github.com/user-attachments/assets/308c135d-40e6-44d8-8cd5-303531ab04bb)
 
 setelah di klik repo kalian, otomatis railway akan menjalankan build project 
 di case project kita, railway akan menjalankan createNodejsApp.js 
 
-# Gambar2
+![image](https://github.com/user-attachments/assets/3aa47d06-55a2-472f-bc10-bfbc7bde968f)
+
+![image](https://github.com/user-attachments/assets/dcbc42fd-a43b-447f-86d2-cbfbfbe375ed)
+
 
 Sebelum itu, apps kalian sudah pasti error. karena kita belum set up env pada cloud service railway. (ENV hal yang wajib di set up selama kalian deploy).
 
 buka tab variables dan isi semua env variables kalian :
 
-# Gambar
+![image](https://github.com/user-attachments/assets/4c895e93-b953-4bc8-8765-75a0f6992052)
 
 setelah diisi maka hasilnya kayak gini :
 
-# Gambar
+![image](https://github.com/user-attachments/assets/62053091-eaa8-4935-ac63-b7e54725940e)
+
 
 Karena cloud serivice kita sudah ada fitur CI/CD, otomatis server akan build ulang atau deploy ulang apps kita. 
 
-# Gambar
+![image](https://github.com/user-attachments/assets/1ba46172-0946-450c-b543-b28cae03bbf5)
 
 Setelah Build selesai, kalian check Settings tab -> Networking.
 klik generate domain, untuk membuka domain pada backend kalian.
@@ -201,5 +205,8 @@ https://inventory-system-production-4570.up.railway.app/
 
 **NOTE:** 
 Jika railway kalian trialnya habis, gua saranin dari sekarang kalian sudah mulai memikirkan server/cloud service buat nemenin masa pembelajaran kalian. Karena di pembelajaran selanjutnya kalian akan lebih sering deploy backend untuk kebutuhan phase 2. kalian bisa beli plan nya railway kayak gua (hobby plan). overall plan ini kalo servernya ga banyak cuman ke charge 50 ribuan per bulan 
+
+![image](https://github.com/user-attachments/assets/eb687f04-150c-422d-bc15-8f66ec29df57)
+
 
 atau kalian bisa beli cloud service umum seperti AWS, GCP , atau Azure. cuman kalian perlu belajar linux untuk deploy apps kalian, karena mereka basenya remote ke VPS (ga UI seperti railway). jadi kalian perlu belajar learning path untuk cloud service itu sendiri
