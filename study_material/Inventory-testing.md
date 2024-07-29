@@ -26,7 +26,7 @@ setelah itu, buatlah folder mocks di dalam folder prisma, didalam folder mocks b
 
 jadi struktur folder kalian seperti ini :
 
-# Gambar
+![image](https://github.com/user-attachments/assets/b13270f3-c152-4ee5-8fdb-c4f34f86cb34)
 
 Di folder index.js, kita akan membuat code seperti ini:
 `mocks/index.js`
@@ -93,7 +93,7 @@ secara default nama database dari railway itu railway makanya disini kalian hany
 NOTE: Ini kebetulan kita memakai railway, jadi misal kalian memakai hosting db lain lebih bagus membuat 2 env db url
 seperti DATABASE_URL dan DATABASE_URL_TESTING agar lebih safety. 
 
-# gambar
+![image](https://github.com/user-attachments/assets/cffa6fc9-4dba-4933-a977-edf7825c4ae3)
 
 Nah dari database baru ini, Integration Testing akan memakainya untuk eksekusi test case API. Tetapi kita perlu push schema terlebih dahulu sebelum testing dimulai, karena database baru ini sudah pasti kosong isinya.
 
@@ -175,7 +175,7 @@ Bedanya test dan coverage adalah command test hanya menjalankan file yang menggu
 Sekarang kita perlu buat dummy data sebelum membuat Test Case pada Auth API.
 buatlah folder tests di root project kalian , dan buat 2 folder didalamnya yaitu fixtures dan integration.
 
-# Gambar
+![image](https://github.com/user-attachments/assets/ad291460-5d02-40b0-a760-81e23fccca79)
 
 Didalam fixtures, buatlah 2 file. user.fixture.js dan `token.fixture.js`
 
@@ -309,10 +309,10 @@ Integration Testing ini sudah mencakup Prisma untuk interaksi dengan database, s
 Jalankan command npm run test untuk menjalankan test case integration.
 NOTE: disini memang aga lumayan lama, karena kita memakai set up mocking http + database. (beda dengan testing yang hanya set up local atau tanpa mocking http + database) 
 
-# Gambar
+![image](https://github.com/user-attachments/assets/aa741a46-15c7-4e78-b42e-34977e086e02)
 
 jalankan command npm run coverage untuk mengcover semua quality code + test case. 
 
-# Gambar
+![image](https://github.com/user-attachments/assets/4acf0256-71ce-4868-b2be-76b2415d1b9c)
 
 disini keliatan code quality gua jelek banget wkwk, karena category service banyak function dan line yang ga kepake (ini bertujuan buat ngajar aja kemarin).
