@@ -8,7 +8,7 @@ langsung aja kita mulai week5 , dengan Logic Nolep (Finishing Inventory System).
 ***Logic Nolep Finishing IS***
 - selesaikan semua CRUD dari project IS
 
--gunakan system quantity stock (setiap order dibuat, quantity di product akan berkurang sesuai data orderItem)
+- gunakan system quantity stock (setiap order dibuat, quantity di product akan berkurang sesuai data orderItem)
 
 - tambahkan api search product by category (input text search wajib memakai req.query)
 
