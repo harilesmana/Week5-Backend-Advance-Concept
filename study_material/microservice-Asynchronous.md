@@ -335,7 +335,7 @@ user-service/
 
 mari mulai dari `drizzle.config.ts` dan `.env`
 - drizzle.config.ts
-```
+```ts
 // drizzle.config.ts
 import type { Config } from 'drizzle-kit'
 
@@ -640,7 +640,317 @@ database
 jika berhasil maka akan muncul log dengan server port 3001, dan jika ingin mencobanya menggunakan
 maka masuke ke `localhost:3001/docs`
 
+dan setelah itu mari kita buat unit test untuk service kita.
+bun memiliki library testnya sendiri jadi kalian tidak perlu menggunakan jest untuk project ini.
+
+untuk setup nya mari buat file tests pada project kalian
+
+```
+mkdir tests
+```
+pertama buat setup.ts untuk database mocknya
+
+```ts
+// tests/setup.ts
+import { mock } from "bun:test";
+
+// Global mock for bcrypt
+mock.module('bcrypt', () => ({
+  hash: () => Promise.resolve('hashed_password_123'),
+  compare: () => Promise.resolve(true)
+}));
+
+// Global mock for database if needed
+mock.module('../src/config/database', () => ({
+  db: {
+    insert: () => ({
+      values: () => ({
+        returning: () => []
+      })
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => []
+        })
+      })
+    })
+  }
+}));
+```
+
+lalu buat test untuk service
+
+```
+mkdir tests/unit/userService.test.ts
+```
+
+lalu masukan code untuk testing serperti berikut
+
+```ts
+// tests/unit/services/userService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { UserService } from '../../../src/services/userServices';
+
+describe('UserService', () => {
+  let userService: UserService;
+
+  beforeEach(() => {
+    userService = new UserService();
+
+    // Mock bcrypt globally
+    mock.module('bcrypt', () => ({
+      hash: async (data: string) => 'hashed_' + data,
+      compare: async (data: string, hash: string) => hash === 'hashed_' + data
+    }));
+  });
+
+  describe('createUser', () => {
+    it('should create user successfully', async () => {
+      const userData = {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [{
+                id: 1,
+                username: userData.username,
+                email: userData.email,
+                password: 'hashed_' + userData.password,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }]
+            })
+          })
+        }
+      }));
+
+      const result = await userService.createUser(userData);
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0].username).toBe(userData.username);
+      expect(result[0].email).toBe(userData.email);
+      expect(result[0].password).toStartWith('hashed_');
+    });
+
+    it('should throw error if user creation fails', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => {
+            throw new Error('Database error');
+          }
+        }
+      }));
+
+      await expect(userService.createUser({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123'
+      })).rejects.toThrow('Failed to create user');
+    });
+
+    it('should throw error if email already exists', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => {
+            throw new Error('duplicate key value violates unique constraint');
+          }
+        }
+      }));
+
+      await expect(userService.createUser({
+        username: 'testuser',
+        email: 'existing@example.com',
+        password: 'password123'
+      })).rejects.toThrow('Failed to create user');
+    });
+  });
+
+  describe('loginUser', () => {
+    it('should login successfully with correct credentials', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        password: 'password123'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [{
+                  id: 1,
+                  email: loginData.email,
+                  password: 'hashed_' + loginData.password,
+                  username: 'testuser'
+                }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await userService.loginUser(loginData.email, loginData.password);
+      expect(result).toHaveProperty('id');
+      expect(result.email).toBe(loginData.email);
+    });
+
+    it('should throw error if password is incorrect', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [{
+                  id: 1,
+                  email: 'test@example.com',
+                  password: 'hashed_correctpassword',
+                  username: 'testuser'
+                }]
+              })
+            })
+          })
+        }
+      }));
+
+      await expect(userService.loginUser('test@example.com', 'wrongpassword'))
+        .rejects.toThrow('Failed to login user');
+    });
+  });
+
+  describe('getUserById', () => {
+    it('should return user by id', async () => {
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [mockUser]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await userService.getUserById(1);
+      // @ts-ignore
+      expect(result).toEqual(mockUser);
+    });
+
+    
+  });
+
+  describe('updateUser', () => {
+    it('should update user successfully', async () => {
+      const updateData = {
+        username: 'updateduser',
+        email: 'updated@example.com'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{
+                  id: 1,
+                  ...updateData,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await userService.updateUser(1, updateData);
+      expect(result[0].username).toBe(updateData.username);
+      expect(result[0].email).toBe(updateData.email);
+    });
+
+    it('should update password if provided', async () => {
+      const updateData = {
+        password: 'newpassword123'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{
+                  id: 1,
+                  password: 'hashed_' + updateData.password,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await userService.updateUser(1, updateData);
+      expect(result[0].password).toStartWith('hashed_');
+    });
+
+    it('should throw error if update fails', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => {
+            throw new Error('Update failed');
+          }
+        }
+      }));
+
+      await expect(userService.updateUser(1, { username: 'newname' }))
+        .rejects.toThrow('Failed to update user');
+    });
+  });
+});
+
+```
+
+lalu untuk menjalankan testnya kalian bisa menambahkan script pada package.json kalian seperti ini
+
+```json
+"scripts": {
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+},
+```
+
+atau kalian bisa langsung menjalankan command di terminal
+
+```
+bun test
+bun test --watch
+```
+
 ### 2. Catalog Service
+
+lalu untuk service ke dua ini kita akan membuat Catalog Service untuk list2 buku yg akan ada pada perpustakaan kita
+
+pertama masuk ke directory Catalog-service jiia belom masuk
+```
+cd service/Catalog-service
+```
+
+lalu inisialisasi service dengan menjalankan
+```
+bun init
+```
 
 masukan code ini ke dalam package.json
 ```json
@@ -1229,6 +1539,462 @@ bun run dev
 
 jika berhasil maka kana berjalan di port 3002
 
+lalu mari kita buat unit test nya seperti sebelumnya
+
+untuk setup nya mari buat file tests pada project kalian
+
+```
+mkdir tests
+```
+pertama buat setup.ts untuk database mocknya
+
+```ts
+// tests/setup.ts
+import { mock } from "bun:test";
+
+// Global mock for database
+mock.module('../src/config/database', () => ({
+  db: {
+    insert: () => ({
+      values: () => ({
+        returning: () => []
+      })
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => []
+        })
+      })
+    })
+  }
+}));
+```
+
+lalu buat test untuk service
+
+```
+mkdir tests/unit/bookService.test.ts
+```
+
+lalu masukan code untuk testing serperti berikut
+
+- testing untuk book service
+
+```ts
+// tests/unit/services/bookService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { BookService } from '../../../src/services/bookService';
+
+describe('BookService', () => {
+  let bookService: BookService;
+
+  beforeEach(() => {
+    bookService = new BookService();
+  });
+
+  describe('createBook', () => {
+    it('should create a book successfully', async () => {
+      const bookData = {
+        title: 'Test Book',
+        author: 'Test Author',
+        isbn: '1234567890',
+        totalCopies: 5,
+        availableCopies: 5
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [{ id: 1, ...bookData }]
+            })
+          })
+        }
+      }));
+
+      const result = await bookService.createBook(bookData);
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0].title).toBe(bookData.title);
+    });
+
+    it('should throw error on create book failure', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => {
+            throw new Error('Database error');
+          }
+        }
+      }));
+
+      await expect(bookService.createBook({
+        title: 'Test Book',
+        author: 'Test Author',
+        isbn: '1234567890',
+        totalCopies: 5,
+        availableCopies: 5
+      })).rejects.toThrow('Failed to create book');
+    });
+  });
+
+  describe('getBooks', () => {
+    it('should return books with pagination', async () => {
+      const mockBooks = [
+        { id: 1, title: 'Book 1', author: 'Author 1' },
+        { id: 2, title: 'Book 2', author: 'Author 2' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              limit: () => ({
+                offset: () => mockBooks
+              })
+            })
+          }),
+          select: () => ({
+            from: () => [{
+              count: '2'
+            }]
+          })
+        }
+      }));
+
+      const result = await bookService.getBooks(1, 10);
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+    });
+
+    it('should handle search parameter', async () => {
+      const mockBooks = [
+        { id: 1, title: 'Specific Book' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => ({
+                  offset: () => mockBooks
+                })
+              })
+            })
+          }),
+          select: () => ({
+            from: () => [{
+              count: '1'
+            }]
+          })
+        }
+      }));
+
+      const result = await bookService.getBooks(1, 10, 'Specific');
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe('getBookById', () => {
+    it('should return a book by id', async () => {
+      const mockBook = {
+        id: 1,
+        title: 'Test Book',
+        author: 'Test Author'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [mockBook]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await bookService.getBookById(1);
+      expect(result).toEqual(mockBook);
+    });
+
+    
+  });
+
+  describe('updateBook', () => {
+    it('should update book successfully', async () => {
+      const updateData = {
+        title: 'Updated Book',
+        author: 'Updated Author'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{ id: 1, ...updateData }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await bookService.updateBook(1, updateData);
+      expect(result[0].title).toBe(updateData.title);
+    });
+
+    it('should throw error on update failure', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => {
+            throw new Error('Update failed');
+          }
+        }
+      }));
+
+      await expect(bookService.updateBook(1, { title: 'New Title' }))
+        .rejects.toThrow('Failed to update book');
+    });
+  });
+
+  describe('deleteBook', () => {
+    it('should delete book successfully', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          delete: () => ({
+            where: () => ({
+              returning: () => [{ id: 1 }]
+            })
+          })
+        }
+      }));
+
+      const result = await bookService.deleteBook(1);
+      expect(result[0]).toHaveProperty('id');
+    });
+
+    it('should throw error on delete failure', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          delete: () => {
+            throw new Error('Delete failed');
+          }
+        }
+      }));
+
+      await expect(bookService.deleteBook(1))
+        .rejects.toThrow('Failed to delete book');
+    });
+  });
+
+  describe('updateBookCopies', () => {
+    it('should update available copies when borrowing', async () => {
+      const mockBook = {
+        id: 1,
+        availableCopies: 2
+      };
+
+      // Mock getBookById
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [mockBook]
+              })
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{ ...mockBook, availableCopies: 1 }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await bookService.updateBookCopies(1, 'borrow');
+      expect(result[0].availableCopies).toBe(1);
+    });
+
+    
+  });
+});
+```
+
+lalu buat file untuk category service
+
+```
+mkdir tests/unit/categoryService.test.ts
+```
+
+- test untuk category service
+```ts
+// tests/unit/services/categoryService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { CategoryService } from '../../../src/services/categoryService';
+
+describe('CategoryService', () => {
+  let categoryService: CategoryService;
+
+  beforeEach(() => {
+    categoryService = new CategoryService();
+  });
+
+  describe('createCategory', () => {
+    it('should create category successfully', async () => {
+      const categoryData = {
+        name: 'Test Category',
+        description: 'Test Description'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [{ id: 1, ...categoryData }]
+            })
+          })
+        }
+      }));
+
+      const result = await categoryService.createCategory(categoryData);
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0].name).toBe(categoryData.name);
+    });
+  });
+
+  describe('getCategories', () => {
+    it('should return all categories', async () => {
+      const mockCategories = [
+        { id: 1, name: 'Category 1' },
+        { id: 2, name: 'Category 2' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => mockCategories
+          })
+        }
+      }));
+
+      const result = await categoryService.getCategories();
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('getCategoryById', () => {
+    it('should return category by id', async () => {
+      const mockCategory = {
+        id: 1,
+        name: 'Test Category'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [mockCategory]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await categoryService.getCategoryById(1);
+      expect(result).toEqual(mockCategory);
+    });
+
+    
+  });
+
+  describe('updateCategory', () => {
+    it('should update category successfully', async () => {
+      const updateData = {
+        name: 'Updated Category'
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{ id: 1, ...updateData }]
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await categoryService.updateCategory(1, updateData);
+      expect(result[0].name).toBe(updateData.name);
+    });
+  });
+
+  describe('deleteCategory', () => {
+    it('should delete category successfully', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          delete: () => ({
+            where: () => ({
+              returning: () => [{ id: 1 }]
+            })
+          })
+        }
+      }));
+
+      const result = await categoryService.deleteCategory(1);
+      expect(result[0]).toHaveProperty('id');
+    });
+  });
+
+  describe('getBooksInCategory', () => {
+    it('should return books in category', async () => {
+      const mockBooks = [
+        { id: 1, title: 'Book 1', categoryId: 1 },
+        { id: 2, title: 'Book 2', categoryId: 1 }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => mockBooks
+            })
+          })
+        }
+      }));
+
+      const result = await categoryService.getBooksInCategory(1);
+      expect(result).toHaveLength(2);
+    });
+  });
+});
+```
+
+lalu untuk menjalankan testnya kalian bisa menambahkan script pada `package.json` kalian seperti ini
+
+```json
+"scripts": {
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+},
+```
+
+atau kalian bisa langsung menjalankan command di terminal
+
+```
+bun test
+bun test --watch
+```
+
 ### 3. Borrowing Service
 
 untuk service ini kita akan menginstall dependencies tambahan dari sebelumnya
@@ -1746,6 +2512,326 @@ bun run dev
 
 jika berhasil maka kana berjalan di port 3003
 
+lalu seperti sebelumnya mari buat file tests pada project untuk service borrowing kalian
+
+```
+mkdir tests
+```
+pertama buat setup.ts untuk database mocknya
+
+```ts
+// tests/setup.ts
+import { mock } from "bun:test";
+
+// Global mock for bcrypt
+mock.module('bcrypt', () => ({
+  hash: () => Promise.resolve('hashed_password_123'),
+  compare: () => Promise.resolve(true)
+}));
+
+// Global mock for database if needed
+mock.module('../src/config/database', () => ({
+  db: {
+    insert: () => ({
+      values: () => ({
+        returning: () => []
+      })
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => []
+        })
+      })
+    })
+  }
+}));
+```
+
+lalu buat test untuk service
+
+```
+mkdir tests/unit/loanService.test.ts
+```
+
+lalu masukan code untuk testing serperti berikut
+
+```ts
+// tests/unit/services/loanService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { LoanService } from '../../../src/services/loanService';
+
+describe('LoanService', () => {
+  let loanService: LoanService;
+
+  beforeEach(() => {
+    loanService = new LoanService();
+    process.env.CATALOG_SERVICE_URL = 'http://localhost:3002';
+  });
+
+  describe('createLoan', () => {
+    it('should create loan successfully', async () => {
+      const loanData = {
+        userId: 1,
+        bookId: 1,
+      };
+
+      // Mock fetch for book check
+      global.fetch = mock(async (url: string, options?: any) => {
+        if (url.includes('/api/books/1') && !options?.method) {
+          return {
+            ok: true,
+            json: async () => ({
+              id: 1,
+              availableCopies: 2
+            })
+          } as Response;
+        }
+        // Mock fetch for updating book copies
+        if (url.includes('/api/books/1') && options?.method === 'PUT') {
+          return {
+            ok: true,
+            json: async () => ({ success: true })
+          } as Response;
+        }
+        return new Response();
+      });
+
+      // Mock RabbitMQ channel
+      mock.module('../../../src/config/amqp', () => ({
+        getChannel: async () => ({
+          sendToQueue: async () => true
+        })
+      }));
+
+      // Mock database
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [{
+                id: 1,
+                ...loanData,
+                status: 'ACTIVE',
+                dueDate: new Date(),
+                createdAt: new Date()
+              }]
+            })
+          })
+        }
+      }));
+
+      const result = await loanService.createLoan(loanData);
+      expect(result).toHaveProperty('id');
+      expect(result.status).toBe('ACTIVE');
+    });
+
+    it('should throw error when book not available', async () => {
+      // Mock fetch for book with no copies
+      global.fetch = mock(async () => ({
+        ok: true,
+        json: async () => ({
+          id: 1,
+          availableCopies: 0
+        })
+      } as Response));
+
+      await expect(loanService.createLoan({ userId: 1, bookId: 1 }))
+        .rejects.toThrow('Book not available');
+    });
+  });
+
+  describe('getAllLoans', () => {
+    it('should return paginated loans', async () => {
+      const mockLoans = [
+        { id: 1, userId: 1, bookId: 1, status: 'ACTIVE' },
+        { id: 2, userId: 2, bookId: 2, status: 'ACTIVE' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              limit: () => ({
+                offset: () => mockLoans
+              })
+            })
+          }),
+          select: () => ({
+            from: () => [{
+              count: '2'
+            }]
+          })
+        }
+      }));
+
+      const result = await loanService.getAllLoans(1, 10);
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+    });
+  });
+
+  describe('getUserLoans', () => {
+    it('should return user loans', async () => {
+      const mockLoans = [
+        { id: 1, userId: 1, bookId: 1, status: 'ACTIVE' },
+        { id: 2, userId: 1, bookId: 2, status: 'RETURNED' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => mockLoans
+            })
+          })
+        }
+      }));
+
+      const result = await loanService.getUserLoans(1);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should filter by status', async () => {
+      const mockLoans = [
+        { id: 1, userId: 1, bookId: 1, status: 'ACTIVE' }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                where: () => mockLoans
+              })
+            })
+          })
+        }
+      }));
+
+      const result = await loanService.getUserLoans(1, 'ACTIVE');
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('ACTIVE');
+    });
+  });
+
+  describe('returnBook', () => {
+    it('should return book successfully', async () => {
+      // Mock loan fetch
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => [{
+                  id: 1,
+                  userId: 1,
+                  bookId: 1,
+                  status: 'ACTIVE'
+                }]
+              })
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => [{
+                  id: 1,
+                  status: 'RETURNED',
+                  returnDate: new Date()
+                }]
+              })
+            })
+          })
+        }
+      }));
+
+      // Mock fetch for book update
+      global.fetch = mock(async (url: string) => ({
+        ok: true,
+        json: async () => ({
+          id: 1,
+          availableCopies: 1
+        })
+      } as Response));
+
+      // Mock RabbitMQ channel
+      mock.module('../../../src/config/amqp', () => ({
+        getChannel: async () => ({
+          sendToQueue: async () => true
+        })
+      }));
+
+      const result = await loanService.returnBook(1);
+      expect(result.status).toBe('RETURNED');
+      expect(result).toHaveProperty('returnDate');
+    });
+
+    it('should throw error for invalid loan', async () => {
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: () => []
+              })
+            })
+          })
+        }
+      }));
+
+      await expect(loanService.returnBook(999))
+        .rejects.toThrow('Invalid loan or already returned');
+    });
+  });
+
+  describe('checkOverdueLoans', () => {
+    it('should update overdue loans', async () => {
+      const mockOverdueLoans = [
+        { id: 1, userId: 1, bookId: 1, status: 'ACTIVE', dueDate: new Date('2023-01-01') }
+      ];
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                where: () => mockOverdueLoans
+              })
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => ({ success: true })
+            })
+          })
+        }
+      }));
+
+      const result = await loanService.checkOverdueLoans();
+      expect(result).toHaveLength(1);
+    });
+  });
+});
+```
+
+lalu untuk menjalankan testnya kalian bisa menambahkan script pada package.json kalian seperti ini
+
+```json
+"scripts": {
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+},
+```
+
+atau kalian bisa langsung menjalankan command di terminal
+
+```
+bun test
+bun test --watch
+```
+
 ### 4. Review Service
 
 untuk service ini kita akan menginstall dependencies tambahan dari sebelumnya
@@ -2241,6 +3327,314 @@ bun run dev
 ```
 
 jika berhasil maka kana berjalan di port 3004
+
+untuk setup nya mari buat file tests pada project kalian
+
+```
+mkdir tests
+```
+pertama buat setup.ts untuk database mocknya
+
+```ts
+// tests/setup.ts
+import { mock } from "bun:test";
+
+// Global mock for bcrypt
+mock.module('bcrypt', () => ({
+  hash: () => Promise.resolve('hashed_password_123'),
+  compare: () => Promise.resolve(true)
+}));
+
+// Global mock for database if needed
+mock.module('../src/config/database', () => ({
+  db: {
+    insert: () => ({
+      values: () => ({
+        returning: () => []
+      })
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => []
+        })
+      })
+    })
+  }
+}));
+```
+
+lalu buat test untuk service
+
+```
+mkdir tests/unit/loanService.test.ts
+```
+
+seperti sebelumnya masukan code untuk testing service review serperti berikut
+
+```ts
+// tests/unit/services/reviewService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { ReviewService } from '../../../src/services/reviewService';
+import { eq } from 'drizzle-orm';
+
+describe('ReviewService', () => {
+  let reviewService: ReviewService;
+
+  beforeEach(() => {
+    reviewService = new ReviewService();
+    process.env.CATALOG_SERVICE_URL = 'http://localhost:3002';
+
+    // Mock the database with proper chainable queries
+    mock.module('../../../src/config/database', () => ({
+      db: {
+        select: () => {
+          const chainableQuery = {
+            from: () => chainableQuery,
+            where: () => chainableQuery,
+            limit: () => [],
+            offset: () => chainableQuery,
+            orderBy: () => chainableQuery,
+            returning: () => [{
+              id: 1,
+              userId: 1,
+              bookId: 1,
+              rating: 4,
+              comment: 'Test review',
+              averageRating: 4.0,
+              totalReviews: 1
+            }]
+          };
+          return chainableQuery;
+        },
+        insert: () => ({
+          values: () => ({
+            returning: () => [{
+              id: 1,
+              userId: 1,
+              bookId: 1,
+              rating: 4,
+              comment: 'Test review',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }]
+          })
+        }),
+        update: () => ({
+          set: () => ({
+            where: () => ({
+              returning: () => [{
+                id: 1,
+                userId: 1,
+                bookId: 1,
+                rating: 5,
+                comment: 'Updated review'
+              }]
+            })
+          })
+        }),
+        delete: () => ({
+          where: () => true
+        })
+      }
+    }));
+
+    // Mock fetch global
+    global.fetch = mock(async () => ({
+      ok: true,
+      json: async () => ({ 
+        id: 1,
+        averageRating: 4.0,
+        totalReviews: 1
+      })
+    } as Response));
+  });
+
+  describe('createReview', () => {
+    it('should create a review successfully', async () => {
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => chainableQuery,
+        limit: () => [],
+        offset: () => chainableQuery,
+        orderBy: () => chainableQuery,
+        returning: () => [{
+          id: 1,
+          userId: 1,
+          bookId: 1,
+          rating: 4,
+          comment: 'Test review'
+        }]
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery,
+          insert: () => ({
+            values: () => ({
+              returning: () => [{
+                id: 1,
+                userId: 1,
+                bookId: 1,
+                rating: 4,
+                comment: 'Test review',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }]
+            })
+          })
+        }
+      }));
+
+      const result = await reviewService.createReview({
+        userId: 1,
+        bookId: 1,
+        rating: 4,
+        comment: 'Test review'
+      });
+
+      expect(result).toHaveProperty('id');
+      expect(result.rating).toBe(4);
+    });
+  });
+
+  describe('getBookReviews', () => {
+    it('should return paginated book reviews', async () => {
+      const mockReviews = [
+        { id: 1, rating: 4, comment: 'Great!' },
+        { id: 2, rating: 5, comment: 'Amazing!' }
+      ];
+
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => chainableQuery,
+        limit: () => chainableQuery,
+        offset: () => chainableQuery,
+        orderBy: () => mockReviews,
+        then: (cb: any) => cb([{ count: '2' }])
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery
+        }
+      }));
+
+      const result = await reviewService.getBookReviews(1);
+      expect(result.data).toHaveLength(2);
+    });
+  });
+
+  describe('getUserReviews', () => {
+    it('should return user reviews', async () => {
+      const mockReviews = [
+        { id: 1, userId: 1, rating: 4 },
+        { id: 2, userId: 1, rating: 5 }
+      ];
+
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => mockReviews
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery
+        }
+      }));
+
+      const result = await reviewService.getUserReviews(1);
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('updateReview', () => {
+    it('should update review successfully', async () => {
+      const mockReview = {
+        id: 1,
+        userId: 1,
+        bookId: 1,
+        rating: 4
+      };
+
+      const selectQuery = {
+        from: () => selectQuery,
+        where: () => selectQuery,
+        limit: () => [mockReview]
+      };
+
+      const updateQuery = {
+        set: () => ({
+          where: () => ({
+            returning: () => [{
+              ...mockReview,
+              rating: 5,
+              comment: 'Updated review'
+            }]
+          })
+        })
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => selectQuery,
+          update: () => updateQuery
+        }
+      }));
+
+      const result = await reviewService.updateReview(1, 1, {
+        rating: 5,
+        comment: 'Updated review'
+      });
+
+      expect(result.rating).toBe(5);
+    });
+  });
+
+  describe('deleteReview', () => {
+    it('should delete review successfully', async () => {
+      const selectQuery = {
+        from: () => selectQuery,
+        where: () => selectQuery,
+        limit: () => [{
+          id: 1,
+          userId: 1,
+          bookId: 1
+        }]
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => selectQuery,
+          delete: () => ({
+            where: () => true
+          })
+        }
+      }));
+
+      const result = await reviewService.deleteReview(1, 1);
+      expect(result.message).toBe('Review deleted successfully');
+    });
+  });
+});
+```
+
+lalu untuk menjalankan testnya kalian bisa menambahkan script pada package.json kalian seperti ini
+
+```json
+"scripts": {
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+},
+```
+
+atau kalian bisa langsung menjalankan command di terminal
+
+```
+bun test
+bun test --watch
+```
+
 
 ### 5. Notification Service
 
@@ -2743,1868 +4137,431 @@ bun run db:migrate
 bun run dev
 ```
 
-### 6. API Gateway
-bagian ini kalian akan membuat bagian  api gateway server yang mengumpulkan semua service kedalam
-satu host server agar lebih mudah di gunakan
+lalu testingnya untuk kali kita tidak perlu setup langsung membuat service testingnya
 
-- package.json
-```json
-{
-  "name": "api-gateway",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "@elysiajs/cors": "latest",
-    "@elysiajs/swagger": "latest",
-    "elysia": "latest",
-    "jsonwebtoken": "latest"
-  },
-  "devDependencies": {
-    "bun-types": "latest",
-    "@types/jsonwebtoken": "latest"
-  }
-}
-```
 
-- .env
-```
-JWT_SECRET=randomparanolep
-USER_SERVICE_URL=http://localhost:3001
-CATALOG_SERVICE_URL=http://localhost:3002
-BORROWING_SERVICE_URL=http://localhost:3003
-REVIEW_SERVICE_URL=http://localhost:3004
-```
-
-- src/config/services.ts
+- emailService.test.ts
 ```ts
-// src/config/services.ts
-export const services = {
-  users: {
-    url: process.env.USER_SERVICE_URL || 'http://localhost:3001',
-    endpoints: {
-      register: '/api/users/register',
-      login: '/api/users/login',
-      profile: '/api/users/:id'
-    }
-  },
-  catalog: {
-    url: process.env.CATALOG_SERVICE_URL || 'http://localhost:3002',
-    endpoints: {
-      books: '/api/books',
-      categories: '/api/categories'
-    }
-  },
-  borrowing: {
-    url: process.env.BORROWING_SERVICE_URL || 'http://localhost:3003',
-    endpoints: {
-      loans: '/api/loans',
-      returns: '/api/returns'
-    }
-  },
-  reviews: {
-    url: process.env.REVIEW_SERVICE_URL || 'http://localhost:3004',
-    endpoints: {
-      reviews: '/api/reviews'
-    }
-  },
-  notification: {
-    url: process.env.REVIEW_SERVICE_URL || 'http://localhost:3005',
-    endpoints: {
-      notification: '/api/notification'
-    }
-  }
-}
-```
+// tests/unit/services/reviewService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { ReviewService } from '../../../src/services/reviewService';
+import { eq } from 'drizzle-orm';
 
-sekarang ke midleware
+describe('ReviewService', () => {
+  let reviewService: ReviewService;
 
-- src/middleware/auth.ts
+  beforeEach(() => {
+    reviewService = new ReviewService();
+    process.env.CATALOG_SERVICE_URL = 'http://localhost:3002';
 
-```ts
-import { verify } from "./jwt"
-// src/middleware/auth.ts
-
-export const authMiddleware = async ({ request, set }: any) => {
-  const authHeader = request.headers.get('authorization')
-  console.log('Auth header:', authHeader) // Debug log
-
-  if (!authHeader?.startsWith('Bearer ')) {
-    set.status = 401
-    return { error: 'Unauthorized - No token provided' }
-  }
-
-  try {
-    const token = authHeader.split(' ')[1]
-    console.log('Token to verify:', token) // Debug log
-
-    const payload = await verify(token)
-    console.log('Token payload:', payload) // Debug log
-
-    // Ensure token is properly set for downstream requests
-    if (!request.headers.has('authorization')) {
-      request.headers.set('authorization', authHeader)
-    }
-
-    return
-  } catch (error) {
-    console.error('Auth error:', error)
-    set.status = 401
-    return { error: 'Invalid token' }
-  }
-}
-```
-
-- src/middleware/errorHandler.ts
-
-```ts
-// src/middleware/errorHandler.ts
-import { Elysia } from 'elysia'
-
-export const errorHandler = new Elysia()
-  .onError(({ code, error, set }: any) => {
-    console.error(`Error: ${error.message}`)
-    
-    switch (code) {
-      case 'NOT_FOUND':
-        set.status = 404
-        return { error: 'Not Found' }
-      case 'VALIDATION':
-        set.status = 400
-        return { error: 'Validation Error', details: error.message }
-      default:
-        set.status = 500
-        return { 
-          error: 'Internal Server Error',
-          message: error.message 
-        }
-    }
-  })
-```
-
-- src/middleware/jwt.ts
-
-```ts
-// src/middleware/jwt.ts
-import { verify as jwtVerify } from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-
-interface JWTPayload {
-  id: string
-  [key: string]: any
-}
-
-export const verify = (token: string): Promise<JWTPayload> => {
-  return new Promise((resolve, reject) => {
-    jwtVerify(token, JWT_SECRET, (err, decoded) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(decoded as JWTPayload)
-      }
-    })
-  })
-}
-```
-
-- src/middleware/logger.ts
-
-```ts
-// src/middleware/logger.ts
-import { Elysia } from 'elysia';
-
-export const logger = new Elysia()
-    .onRequest(({ request }) => {
-        console.log(`${new Date().toISOString()} [Request] ${request.method} ${request.url}`);
-    })
-    .on('afterHandle', ({ request, response }) => {
-        console.log(
-            `${new Date().toISOString()} [Response] ${request.method} ${request.url} - Status: ${response?.status}`
-        );
-    });
-
-```
-
-- src/middleware/rateLimit.ts
-
-```ts
-// src/middleware/rateLimit.ts
-import { Elysia } from 'elysia'
-
-const rateLimits = new Map()
-
-export const rateLimit = new Elysia().onRequest(({ request, set }: any) => {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown'
-  const now = Date.now()
-  const windowMs = 60000 // 1 minute
-  const limit = 100 // requests per windowMs
-
-  const requests = rateLimits.get(ip) || []
-  const windowStart = now - windowMs
-
-  // Clean old requests
-  while (requests.length && requests[0] <= windowStart) {
-    requests.shift()
-  }
-
-  if (requests.length >= limit) {
-    set.status = 429
-    return { error: 'Too many requests' }
-  }
-
-  requests.push(now)
-  rateLimits.set(ip, requests)
-})
-```
-
-- src/routes/proxies.ts
-
-```ts
-// src/routes/proxies.ts
-import { Elysia, t } from 'elysia'
-import { services } from '../config/services'
-import { authMiddleware } from '../middleware/auth'
-
-export const proxies = new Elysia()
-  .group('/api/resource', app => app
-    .get('/', async ({ request }: any) => {
-      // Log incoming request headers
-      console.log('Request headers:', Object.fromEntries(request.headers))
-      // ... rest of the handler
-    }, {
-      beforeHandle: [authMiddleware]
-    })
-  )
-  
-  // User Service Routes
-  .group('/api/users', app => app
-    // Public routes
-    .post('/register', async ({ body }: any) => {
-      const response = await fetch(`${services.users.url}/api/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      return response.json()
-    }, {
-      body: t.Object({
-        username: t.String(),
-        email: t.String(),
-        password: t.String()
-      })
-    })
-    
-    .post('/login', async ({ body }: any) => {
-      const response = await fetch(`${services.users.url}/api/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      return response.json()
-    }, {
-      body: t.Object({
-        email: t.String(),
-        password: t.String()
-      })
-    })
-
-    // Protected routes with auth
-    .get('/:id', async ({ request, params }: any) => {
-      try {
-        const response = await fetch(`${services.users.url}/api/users/${params.id}`, {
-          method: 'GET',
-          headers: {
-            ...request.headers,
-            'Authorization': request.headers.get('authorization') || '',
-            'Content-Type': 'application/json'
-          }
+    // Mock the database with proper chainable queries
+    mock.module('../../../src/config/database', () => ({
+      db: {
+        select: () => {
+          const chainableQuery = {
+            from: () => chainableQuery,
+            where: () => chainableQuery,
+            limit: () => [],
+            offset: () => chainableQuery,
+            orderBy: () => chainableQuery,
+            returning: () => [{
+              id: 1,
+              userId: 1,
+              bookId: 1,
+              rating: 4,
+              comment: 'Test review',
+              averageRating: 4.0,
+              totalReviews: 1
+            }]
+          };
+          return chainableQuery;
+        },
+        insert: () => ({
+          values: () => ({
+            returning: () => [{
+              id: 1,
+              userId: 1,
+              bookId: 1,
+              rating: 4,
+              comment: 'Test review',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }]
+          })
+        }),
+        update: () => ({
+          set: () => ({
+            where: () => ({
+              returning: () => [{
+                id: 1,
+                userId: 1,
+                bookId: 1,
+                rating: 5,
+                comment: 'Updated review'
+              }]
+            })
+          })
+        }),
+        delete: () => ({
+          where: () => true
         })
-    
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-    
-        const data = await response.json()
-        return data
-      } catch (error: any) {
-        console.error('Error fetching user:', error)
-        throw new Error(`Failed to fetch user: ${error.message}`)
       }
-    }, {
-      beforeHandle: [authMiddleware]
-    })
+    }));
 
-    .put('/:id', async ({ request, params, body }: any) => {
-      const response = await fetch(`${services.users.url}/api/users/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          ...request.headers,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+    // Mock fetch global
+    global.fetch = mock(async () => ({
+      ok: true,
+      json: async () => ({ 
+        id: 1,
+        averageRating: 4.0,
+        totalReviews: 1
       })
-      return response.json()
-    }, {
-      beforeHandle: [authMiddleware],
-      body: t.Object({
-        username: t.Optional(t.String()),
-        email: t.Optional(t.String()),
-        password: t.Optional(t.String())
-      })
-    })
-  )
+    } as Response));
+  });
 
-  // Update swagger configuration untuk menambahkan semua endpoint
-  .group('/api/books', app => app
-    .get('/', async ({ request }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/books`, {
-        headers: request.headers
-      })
-      return response.json()
-    })
-    
-    .get('/:id', async ({ request, params }: any) => {
-      const response = await fetch(`${services.users.url}/api/books/${params.id}`, {
-        headers: {
-          ...Object.fromEntries(request.headers)
+  describe('createReview', () => {
+    it('should create a review successfully', async () => {
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => chainableQuery,
+        limit: () => [],
+        offset: () => chainableQuery,
+        orderBy: () => chainableQuery,
+        returning: () => [{
+          id: 1,
+          userId: 1,
+          bookId: 1,
+          rating: 4,
+          comment: 'Test review'
+        }]
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery,
+          insert: () => ({
+            values: () => ({
+              returning: () => [{
+                id: 1,
+                userId: 1,
+                bookId: 1,
+                rating: 4,
+                comment: 'Test review',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }]
+            })
+          })
         }
-      })
-      const data = await response.json()
-      return data
-    }, {
-      beforeHandle: [authMiddleware]
-    })
+      }));
 
-    .post('/', async ({ request, body }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/books`, {
-        method: 'POST',
-        headers: {
-          'Authorization': request.headers.get('authorization'),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message)
-      }
-      
-      return response.json()
-    }, {
-      beforeHandle: [authMiddleware],
-      body: t.Object({
-        title: t.String(),
-        author: t.String(),
-        isbn: t.String(),
-        description: t.Optional(t.String()),
-        categoryId: t.Optional(t.Number()),
-        totalCopies: t.Number(),
-        availableCopies: t.Number()
-      })
-    })
-    .get('/', async ({ request, query }: any) => {
-      const url = new URL(`${services.catalog.url}/api/books`)
-      if (query.search) url.searchParams.set('search', query.search)
-      if (query.page) url.searchParams.set('page', query.page)
-      if (query.limit) url.searchParams.set('limit', query.limit)
-      
-      const response = await fetch(url, {
-        headers: request.headers
-      })
-      return response.json()
-    })
-    
-    .get('/:id', async ({ request, params }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/books/${params.id}`, {
-        headers: request.headers
-      })
-      return response.json()
-    })
-   )
-   
-   .group('/api/categories', app => app
-    .get('/', async ({ request }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/categories`, {
-        headers: request.headers
-      })
-      return response.json()
-    })
-   
-    .get('/:id', async ({ request, params }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/categories/${params.id}`, {
-        headers: request.headers 
-      })
-      return response.json()
-    })
-   
-    .post('/', async ({ request, body }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/categories`, {
-        method: 'POST',
-        headers: {
-          ...Object.fromEntries(request.headers),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      })
-      return response.json()
-    }, {
-      beforeHandle: [authMiddleware],
-      body: t.Object({
-        name: t.String(),
-        description: t.Optional(t.String())
-      })
-    })
-   
-    .put('/:id', async ({ request, params, body }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/categories/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          ...Object.fromEntries(request.headers),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      })
-      return response.json()
-    }, {
-      beforeHandle: [authMiddleware],
-      body: t.Object({
-        name: t.Optional(t.String()),
-        description: t.Optional(t.String())
-      })
-    })
-   
-    .delete('/:id', async ({ request, params }: any) => {
-      const response = await fetch(`${services.catalog.url}/api/categories/${params.id}`, {
-        method: 'DELETE',
-        headers: request.headers
-      })
-      return response.json()
-    }, {
-      beforeHandle: [authMiddleware]
-    })
+      const result = await reviewService.createReview({
+        userId: 1,
+        bookId: 1,
+        rating: 4,
+        comment: 'Test review'
+      });
 
-  )
+      expect(result).toHaveProperty('id');
+      expect(result.rating).toBe(4);
+    });
+  });
 
-  // Borrowing Routes
-  .group('/api/loans', app => app
-    .get('/', async ({ request, query }: any) => {
-      const url = new URL(`${services.borrowing.url}/api/loans`)
-      if (query.page) url.searchParams.set('page', query.page)
-      if (query.limit) url.searchParams.set('limit', query.limit)
-      
-      const response = await fetch(url, {
-        headers: request.headers
-      })
-      return response.json()
-    })
+  describe('getBookReviews', () => {
+    it('should return paginated book reviews', async () => {
+      const mockReviews = [
+        { id: 1, rating: 4, comment: 'Great!' },
+        { id: 2, rating: 5, comment: 'Amazing!' }
+      ];
 
-    .get('/:id', async ({ request, params, query }: any) => {
-      const url = new URL(`${services.borrowing.url}/api/loans/${params.id}`)
-      if (query.status) url.searchParams.set('status', query.status)
-      
-      const response = await fetch(url, {
-        headers: request.headers
-      })
-      return response.json()
-    })
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => chainableQuery,
+        limit: () => chainableQuery,
+        offset: () => chainableQuery,
+        orderBy: () => mockReviews,
+        then: (cb: any) => cb([{ count: '2' }])
+      };
 
-    .post('/', async ({ request, body }: any) => {
-      try {
-        console.log('Loan request body:', body) // Debug log
-        
-        const response = await fetch(`${services.borrowing.url}/api/loans`, {
-          method: 'POST',
-          headers: {
-            'Authorization': request.headers.get('authorization'),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            userId: Number(body.userId),
-            bookId: Number(body.bookId)
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery
+        }
+      }));
+
+      const result = await reviewService.getBookReviews(1);
+      expect(result.data).toHaveLength(2);
+    });
+  });
+
+  describe('getUserReviews', () => {
+    it('should return user reviews', async () => {
+      const mockReviews = [
+        { id: 1, userId: 1, rating: 4 },
+        { id: 2, userId: 1, rating: 5 }
+      ];
+
+      const chainableQuery = {
+        from: () => chainableQuery,
+        where: () => mockReviews
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => chainableQuery
+        }
+      }));
+
+      const result = await reviewService.getUserReviews(1);
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('updateReview', () => {
+    it('should update review successfully', async () => {
+      const mockReview = {
+        id: 1,
+        userId: 1,
+        bookId: 1,
+        rating: 4
+      };
+
+      const selectQuery = {
+        from: () => selectQuery,
+        where: () => selectQuery,
+        limit: () => [mockReview]
+      };
+
+      const updateQuery = {
+        set: () => ({
+          where: () => ({
+            returning: () => [{
+              ...mockReview,
+              rating: 5,
+              comment: 'Updated review'
+            }]
           })
         })
-  
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message)
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => selectQuery,
+          update: () => updateQuery
         }
-  
-        return response.json()
-      } catch (error) {
-        console.error('Error creating loan:', error)
-        throw error
-      }
-    }, {
-      beforeHandle: [authMiddleware],
-      body: t.Object({
-        userId: t.Number({ required: true }),
-        bookId: t.Number({ required: true })
-      })
-    })
+      }));
 
-    .put('/:id/return', async ({ request, params }: any) => {
-      const response = await fetch(`${services.borrowing.url}/api/loans/${params.id}/return`, {
-        method: 'PUT',
-        headers: request.headers
-      })
-      return response.json()
-    })
+      const result = await reviewService.updateReview(1, 1, {
+        rating: 5,
+        comment: 'Updated review'
+      });
 
-    .get('/overdue', async ({ request }: any) => {
-      const response = await fetch(`${services.borrowing.url}/api/loans/overdue`, {
-        headers: request.headers
-      })
-      return response.json()
-    })
-  )
+      expect(result.rating).toBe(5);
+    });
+  });
 
-  // Review Routes
-  // API Gateway - src/routes/proxies.ts
-.group('/api/reviews', app => app
-  .post('/', async ({ request, body }: any) => {
-    try {
-      console.log('Received body:', body) // Debug log
-      
-      const response = await fetch(`${services.reviews.url}/api/reviews`, {
-        method: 'POST',
-        headers: {
-          'Authorization': request.headers.get('authorization'),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: Number(body.userId),
-          bookId: Number(body.bookId),
-          rating: Number(body.rating),
-          comment: body.comment
+  describe('deleteReview', () => {
+    it('should delete review successfully', async () => {
+      const selectQuery = {
+        from: () => selectQuery,
+        where: () => selectQuery,
+        limit: () => [{
+          id: 1,
+          userId: 1,
+          bookId: 1
+        }]
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          select: () => selectQuery,
+          delete: () => ({
+            where: () => true
+          })
+        }
+      }));
+
+      const result = await reviewService.deleteReview(1, 1);
+      expect(result.message).toBe('Review deleted successfully');
+    });
+  });
+});
+```
+dan ini untuk notification service testingnya
+
+- notificationService.test.ts
+
+```ts
+// tests/unit/services/notificationService.test.ts
+import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { NotificationService } from '../../../src/services/notificationService';
+import { emailTemplates } from '../../../src/templates/emailTemplates';
+
+describe('NotificationService', () => {
+  let notificationService: NotificationService;
+
+  beforeEach(() => {
+    notificationService = new NotificationService();
+    process.env.USER_SERVICE_URL = 'http://localhost:3001';
+    process.env.CATALOG_SERVICE_URL = 'http://localhost:3002';
+
+    // Mock email service
+    mock.module('../../../src/services/emailServices', () => ({
+      sendEmail: async () => ({ messageId: 'test-id' })
+    }));
+  });
+
+  describe('createNotification', () => {
+    it('should create notification and send email successfully', async () => {
+      const mockNotification = {
+        id: 1,
+        userId: 1,
+        type: 'TEST',
+        message: 'Test message',
+        status: 'PENDING'
+      };
+
+      // Mock database operations
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [mockNotification]
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => Promise.resolve([{ ...mockNotification, status: 'SENT' }])
+            })
+          })
+        }
+      }));
+
+      // Mock fetch for user service
+      global.fetch = mock(async () => ({
+        ok: true,
+        json: async () => ({ email: 'test@example.com' })
+      } as Response));
+
+      const result = await notificationService.createNotification({
+        userId: 1,
+        type: 'TEST',
+        message: 'Test message'
+      });
+
+      expect(result).toHaveProperty('id');
+      expect(result.status).toBe('PENDING');
+    });
+  });
+
+  describe('handleLoanDueNotification', () => {
+    it('should create loan due notification', async () => {
+      // Mock book service response
+      global.fetch = mock(async () => ({
+        ok: true,
+        json: async () => ({ id: 1, title: 'Test Book' })
+      } as Response));
+
+      // Mock createNotification
+      const mockNotification = {
+        id: 1,
+        userId: 1,
+        type: 'LOAN_DUE',
+        message: emailTemplates.loanDue('Test Book', '2024-01-01')
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [mockNotification]
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => Promise.resolve([{ ...mockNotification, status: 'SENT' }])
+            })
+          })
+        }
+      }));
+
+      const result = await notificationService.handleLoanDueNotification(1, 1, '2024-01-01');
+      expect(result.type).toBe('LOAN_DUE');
+    });
+  });
+
+  describe('handleBookReturnedNotification', () => {
+    it('should create book returned notification', async () => {
+      // Mock book service response
+      global.fetch = mock(async () => ({
+        ok: true,
+        json: async () => ({ id: 1, title: 'Test Book' })
+      } as Response));
+
+      // Mock createNotification
+      const mockNotification = {
+        id: 1,
+        userId: 1,
+        type: 'BOOK_RETURNED',
+        message: emailTemplates.bookReturned('Test Book')
+      };
+
+      mock.module('../../../src/config/database', () => ({
+        db: {
+          insert: () => ({
+            values: () => ({
+              returning: () => [mockNotification]
+            })
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => Promise.resolve([{ ...mockNotification, status: 'SENT' }])
+            })
+          })
+        }
+      }));
+
+      const result = await notificationService.handleBookReturnedNotification(1, 1);
+      expect(result.type).toBe('BOOK_RETURNED');
+    });
+  });
+
+  describe('sendTestNotification', () => {
+    it('should send test email successfully', async () => {
+      const result = await notificationService.sendTestNotification({
+        email: 'test@example.com',
+        type: 'TEST_EMAIL'
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should throw error for invalid notification type', async () => {
+      await expect(
+        notificationService.sendTestNotification({
+          email: 'test@example.com',
+          type: 'INVALID_TYPE'
         })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message)
-      }
-
-      return response.json()
-    } catch (error) {
-      console.error('Error creating review:', error)
-      throw error
-    }
-  }, {
-    beforeHandle: [authMiddleware],
-    body: t.Object({
-      userId: t.Number({ required: true }),
-      bookId: t.Number({ required: true }),
-      rating: t.Number({ required: true, minimum: 1, maximum: 5 }),
-      comment: t.Optional(t.String())
-    })
-  })
-
-  .get('/book/:bookId', async ({ request, params, query }: any) => {
-    const url = new URL(`${services.reviews.url}/api/reviews/book/${params.bookId}`)
-    if (query.page) url.searchParams.set('page', query.page)
-    if (query.limit) url.searchParams.set('limit', query.limit)
-    
-    const response = await fetch(url, {
-      headers: request.headers
-    })
-    return response.json()
-  })
-
-  .get('/user/:userId', async ({ request, params }: any) => {
-    const response = await fetch(`${services.reviews.url}/api/reviews/user/${params.userId}`, {
-      headers: request.headers
-    })
-    return response.json()
-  })
-
-  .put('/:id', async ({ request, params, body }: any) => {
-    const response = await fetch(`${services.reviews.url}/api/reviews/${params.id}`, {
-      method: 'PUT',
-      headers: {
-        ...Object.fromEntries(request.headers),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-    return response.json()
-  })
-
-  .delete('/:id', async ({ request, params, body }: any) => {
-    const response = await fetch(`${services.reviews.url}/api/reviews/${params.id}`, {
-      method: 'DELETE',
-      headers: {
-        ...Object.fromEntries(request.headers),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-    return response.json()
-  })
-)
-
-.group('/api/notifications', app => app
-  .get('/user/:userId', async ({ request, params, query }: any) => {
-    const url = new URL(`${services.notification.url}/api/notifications/user/${params.userId}`)
-    if (query.page) url.searchParams.set('page', query.page)
-    if (query.limit) url.searchParams.set('limit', query.limit)
-    
-    const response = await fetch(url, {
-      headers: request.headers
-    })
-    return response.json()
-  }, {
-    beforeHandle: [authMiddleware]
-  })
-)
+      ).rejects.toThrow('Invalid notification type');
+    });
+  });
+});
 ```
 
-- 
+lalu untuk menjalankan testnya kalian bisa menambahkan script pada package.json kalian seperti ini
 
-```ts
-// src/swagger/config.ts
-export const swaggerConfig = {
-  openapi: '3.0.0',
-  info: {
-    title: 'Digital Library API Gateway',
-    version: '1.0.0',
-    description: 'Complete API documentation for Digital Library Microservices'
-  },
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT'
-      }
-    },
-    schemas: {
-      User: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          username: { type: 'string' },
-          email: { type: 'string' },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
-        }
-      },
-      Book: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          title: { type: 'string' },
-          author: { type: 'string' },
-          isbn: { type: 'string' },
-          totalCopies: { type: 'integer' },
-          availableCopies: { type: 'integer' },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
-        }
-      },
-      Loan: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          userId: { type: 'integer' },
-          bookId: { type: 'integer' },
-          borrowDate: { type: 'string', format: 'date-time' },
-          dueDate: { type: 'string', format: 'date-time' },
-          returnDate: { type: 'string', format: 'date-time', nullable: true },
-          status: { 
-            type: 'string',
-            enum: ['ACTIVE', 'RETURNED', 'OVERDUE']
-          },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
-        }
-      },
-      Review: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          bookId: { type: 'integer' },
-          userId: { type: 'integer' },
-          rating: { type: 'integer', minimum: 1, maximum: 5 },
-          comment: { type: 'string' },
-          createdAt: { type: 'string', format: 'date-time' }
-        }
-      },
-      Notification: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          userId: { type: 'integer' },
-          type: { type: 'string' },
-          message: { type: 'string' },
-          status: { type: 'string' },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
-  },
-  paths: {
-    // Auth & User Management
-    '/api/users/register': {
-      post: {
-        tags: ['Auth'],
-        summary: 'Register new user',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['username', 'email', 'password'],
-                properties: {
-                  username: { type: 'string', example: 'johndoe' },
-                  email: { type: 'string', format: 'email', example: 'john@example.com' },
-                  password: { type: 'string', format: 'password', example: 'password123' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '201': {
-            description: 'User registered successfully',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/User' }
-              }
-            }
-          },
-          '400': {
-            description: 'Invalid input'
-          }
-        }
-      }
-    },
-    '/api/users/login': {
-      post: {
-        tags: ['Auth'],
-        summary: 'Login user',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['email', 'password'],
-                properties: {
-                  email: { type: 'string', format: 'email' },
-                  password: { type: 'string', format: 'password' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '200': {
-            description: 'Login successful',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    user: { $ref: '#/components/schemas/User' },
-                    token: { type: 'string' }
-                  }
-                }
-              }
-            }
-          },
-          '401': {
-            description: 'Invalid credentials'
-          }
-        }
-      }
-    },
-    '/api/users/{id}': {
-      get: {
-        tags: ['Users'],
-        summary: 'Get user by ID',
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'User found',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/User' }
-              }
-            }
-          }
-        }
-      },
-      put: {
-        tags: ['Users'],
-        summary: 'Update user',
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        requestBody: {
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  username: { type: 'string' },
-                  email: { type: 'string', format: 'email' },
-                  password: { type: 'string' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '200': {
-            description: 'User updated',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/User' }
-              }
-            }
-          }
-        }
-      }
-    },
-
-    // Book Management
-    '/api/books': {
-      get: {
-        tags: ['Books'],
-        summary: 'Get all books',
-        parameters: [
-          {
-            name: 'page',
-            in: 'query',
-            schema: { type: 'integer', default: 1 }
-          },
-          {
-            name: 'limit',
-            in: 'query',
-            schema: { type: 'integer', default: 10 }
-          },
-          {
-            name: 'search',
-            in: 'query',
-            schema: { type: 'string' }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'List of books',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    data: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/Book' }
-                    },
-                    total: { type: 'integer' },
-                    page: { type: 'integer' },
-                    totalPages: { type: 'integer' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      post: {
-        tags: ['Books'],
-        summary: 'Add new book',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['title', 'author', 'isbn', 'totalCopies', 'availableCopies'],
-                properties: {
-                  title: { type: 'string', example: 'Book Title' },
-                  author: { type: 'string', example: 'Author Name' },
-                  isbn: { type: 'string', example: '9781234567890' },
-                  description: { type: 'string', example: 'Book description' },
-                  categoryId: { type: 'integer', example: 1 },
-                  totalCopies: { type: 'integer', example: 10 },
-                  availableCopies: { type: 'integer', example: 10 }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '201': {
-            description: 'Book created successfully',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/Book'
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    '/api/books/{id}': {
-      get: {
-        tags: ['Books'],
-        summary: 'Get book by ID',
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'Book found',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/Book' }
-              }
-            }
-          }
-        }
-      }
-    },
-
-    paths: {
-      '/api/books': {
-        get: {
-          tags: ['Books'],
-          parameters: [
-            {
-              name: 'search',
-              in: 'query',
-              schema: { type: 'string' }
-            },
-            {
-              name: 'page',
-              in: 'query', 
-              schema: { type: 'integer' }
-            },
-            {
-              name: 'limit',
-              in: 'query',
-              schema: { type: 'integer' }
-            }
-          ],
-          responses: {
-            '200': {
-              description: 'List of books'
-            }
-          }
-        }
-      },
-      
-      '/api/categories': {
-        get: {
-          tags: ['Categories'],
-          responses: {
-            '200': {
-              description: 'List of categories'
-            }
-          }
-        },
-        post: {
-          tags: ['Categories'],
-          summary: 'Create categories by ID',
-          security: [{ bearerAuth: [] }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['name'],
-                  properties: {
-                    name: { type: 'string' },
-                    description: { type: 'string' }
-                  }
-                }
-              }
-            }
-          },
-          responses: {
-            '201': {
-              description: 'Category created'
-            }
-          }
-        }
-      },
-      
-      '/api/categories/{id}': {
-        get: {
-          tags: ['Categories'],
-          summary: 'Get categories by ID',
-          parameters: [
-            {
-              name: 'id',
-              in: 'path',
-              required: true,
-              schema: { type: 'integer' }
-            }
-          ],
-          responses: {
-            '200': {
-              description: 'Category details'
-            }
-          }
-        },
-        put: {
-          tags: ['Categories'],
-          summary: 'Edit acategories',
-          security: [{ bearerAuth: [] }],
-          parameters: [
-            {
-              name: 'id',
-              in: 'path',
-              required: true,
-              schema: { type: 'integer' }
-            }
-          ],
-          requestBody: {
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    description: { type: 'string' }
-                  }
-                }
-              }
-            }
-          },
-          responses: {
-            '200': {
-              description: 'Category updated'
-            }
-          }
-        },
-        delete: {
-          tags: ['Categories'],
-          security: [{ bearerAuth: [] }],
-          parameters: [
-            {
-              name: 'id',
-              in: 'path',
-              required: true,
-              schema: { type: 'integer' }
-            }
-          ],
-          responses: {
-            '200': {
-              description: 'Category deleted'
-            }
-          }
-        }
-      }
-     },
-
-    // Loan Management
-    '/api/loans': {
-      get: {
-        tags: ['Loans'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'page',
-            in: 'query',
-            schema: { 
-              type: 'string',
-              default: '1'
-            }
-          },
-          {
-            name: 'limit',
-            in: 'query',
-            schema: { 
-              type: 'string',
-              default: '10'
-            }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'List of all loans',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    data: {
-                      type: 'array',
-                      items: {
-                        $ref: '#/components/schemas/Loan'
-                      }
-                    },
-                    total: { type: 'integer' },
-                    page: { type: 'integer' },
-                    totalPages: { type: 'integer' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      post: {
-        tags: ['Loans'],
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['userId', 'bookId'],
-                properties: {
-                  userId: { 
-                    type: 'integer',
-                    example: 1
-                  },
-                  bookId: { 
-                    type: 'integer',
-                    example: 1
-                  }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '201': {
-            description: 'Loan created successfully'
-          }
-        }
-      }
-    },
-
-    '/api/loans/{id}': {
-      get: {
-        tags: ['Loans'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          },
-          {
-            name: 'status',
-            in: 'query',
-            schema: {
-              type: 'string',
-              enum: ['ACTIVE', 'RETURNED', 'OVERDUE']
-            }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'User loans'
-          }
-        }
-      }
-    },
-
-    '/api/loans/{id}/return': {
-      put: {
-        tags: ['Loans'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'Book returned successfully'
-          }
-        }
-      }
-    },
-
-    '/api/loans/overdue': {
-      get: {
-        tags: ['Loans'],
-        security: [{ bearerAuth: [] }],
-        responses: {
-          '200': {
-            description: 'List of overdue loans'
-          }
-        }
-      }
-    },
-
-    // Review Management
-    '/api/reviews': {
-      post: {
-        tags: ['Reviews'],
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['userId', 'bookId', 'rating'], // Remove comment from required
-                properties: {
-                  userId: { 
-                    type: 'integer',
-                    example: 1 
-                  },
-                  bookId: { 
-                    type: 'integer',
-                    example: 1 
-                  },
-                  rating: { 
-                    type: 'integer',
-                    minimum: 1,
-                    maximum: 5,
-                    example: 5
-                  },
-                  comment: { 
-                    type: 'string',
-                    example: "Great book!",
-                    nullable: true // Make comment nullable
-                  }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '201': {
-            description: 'Review created successfully',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'integer' },
-                    userId: { type: 'integer' },
-                    bookId: { type: 'integer' },
-                    rating: { type: 'integer' },
-                    comment: { type: 'string', nullable: true },
-                    createdAt: { type: 'string', format: 'date-time' },
-                    updatedAt: { type: 'string', format: 'date-time' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-
-    '/api/reviews/book/{bookId}': {
-      get: {
-        tags: ['Reviews'],
-        parameters: [
-          {
-            name: 'bookId',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          },
-          {
-            name: 'page',
-            in: 'query',
-            schema: { type: 'integer', default: 1 }
-          },
-          {
-            name: 'limit',
-            in: 'query',
-            schema: { type: 'integer', default: 10 }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'List of book reviews'
-          }
-        }
-      }
-    },
-
-    '/api/reviews/user/{userId}': {
-      get: {
-        tags: ['Reviews'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'userId',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'List of user reviews'
-          }
-        }
-      }
-    },
-
-    '/api/reviews/{id}': {
-      put: {
-        tags: ['Reviews'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['userId'],
-                properties: {
-                  userId: { type: 'integer' },
-                  rating: { type: 'integer', minimum: 1, maximum: 5 },
-                  comment: { type: 'string' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '200': {
-            description: 'Review updated successfully'
-          }
-        }
-      },
-      delete: {
-        tags: ['Reviews'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          }
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['userId'],
-                properties: {
-                  userId: { type: 'integer' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          '200': {
-            description: 'Review deleted successfully'
-          }
-        }
-      }
-    },
-
-    '/api/notifications/user/{userId}': {
-      get: {
-        tags: ['Notifications'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: 'userId',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' }
-          },
-          {
-            name: 'page',
-            in: 'query',
-            schema: { type: 'integer', default: 1 }
-          },
-          {
-            name: 'limit',
-            in: 'query',
-            schema: { type: 'integer', default: 10 }
-          }
-        ],
-        responses: {
-          '200': {
-            description: 'User notifications',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    data: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/Notification' }
-                    },
-                    total: { type: 'integer' },
-                    page: { type: 'integer' },
-                    totalPages: { type: 'integer' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-  
-
+```json
+"scripts": {
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+},
 ```
 
-- src/utils/proxy.ts
-
-```ts
-// src/utils/proxy.ts
-export async function proxy(request: Request, targetUrl: string) {
-  try {
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers: {
-        'Content-Type': 'application/json',
-        // @ts-ignore
-        ...Object.fromEntries(request.headers)
-      },
-      body: request.method !== 'GET' ? await request.text() : undefined
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    return response.json()
-  } catch (error: any) {
-    console.error('Proxy error:', error)
-    throw new Error(`Service unavailable: ${error.message}`)
-  }
-}
-```
-
-- src/index.ts
-
-```ts
-// src/index.ts
-import { Elysia } from 'elysia'
-import { cors } from '@elysiajs/cors'
-import { swagger } from '@elysiajs/swagger'
-import { rateLimit } from './middleware/rateLimit'
-import { errorHandler } from './middleware/errorHandler'
-import { proxies } from './routes/proxies'
-import { logger } from './middleware/logger'
-import { swaggerConfig } from './swagger/config'
-
-const app = new Elysia()
-  .use(swagger({
-    path: '/docs',
-    // @ts-ignore
-    documentation: swaggerConfig
-  }))
-  .use(cors())
-  .use(logger)
-  .use(rateLimit)
-  .use(errorHandler)
-  .use(proxies)
-  .listen(3000)
-
-console.log(`🚀 API Gateway running at ${app.server?.hostname}:${app.server?.port}`)
-```
-
-ok jika kalian sudah menulis code diatas dan menjalankanya akan masuk keport 3000
-
-### Testing dan Running project
-jika kalian sudah selesai menulis codenya dan menjanlankan semua servicenya. maka kalian sudah bisa mengakses semua Service
-kalian perlu menyalakan semua servicenya satu2 agar service bisa di jalankan di api gateway
-dan jika kalian membuka documentasi swagger pada api gateway local host `http://localhost:3000/docs`
-maka akan muncul seperti ini
-![alt text](image.png)
-
-dan kalian sudah bisa mengakses semua service dalam host ini
-
-## PM2
-
-kalian telah menyelesaikan pembuatan project API microservice library.
-untuk menyalakan semua service kalian perlu menjalankannya satu2 dari folder ke folder service
-tetapi ada cara uintuk mempermudah ini dengan server management menggunakan PM2
-
-### apa itu PM2
-PM2 adalah proses manajer untuk aplikasi Node.js yang digunakan untuk 
-menjalankan, mengelola, dan memantau aplikasi pada server. 
-PM2 sangat populer di kalangan pengembang untuk mengelola aplikasi 
-JavaScript/Node.js di server produksi
-
-### Fitur Utama PM2:
-1. Pengelolaan Proses Aplikasi:
-- Menjalankan aplikasi secara terus-menerus (persistent) meskipun server reboot.
-- Mengelola aplikasi dalam mode cluster untuk memaksimalkan penggunaan CPU.
-
-2. Pemantauan Aplikasi:
-- PM2 menyediakan pemantauan proses aplikasi secara real-time, termasuk penggunaan memori dan CPU.
-- Menyediakan logging terpusat untuk memantau output aplikasi dan menangani kesalahan.
-
-3. Load Balancing:
-- Menggunakan mode cluster untuk membagi beban kerja ke beberapa inti CPU (multi-core).
-- Ini membantu aplikasi berjalan lebih efisien dengan memanfaatkan semua daya pemrosesan dari server.
-
-4. Restart Otomatis:
-- PM2 dapat secara otomatis me-restart aplikasi jika terjadi crash atau error, sehingga aplikasi tetap berjalan tanpa gangguan.
-
-5. Manajemen Log:
-- Menyediakan fitur manajemen log yang memudahkan Anda untuk melacak output dari aplikasi Anda.
-
-### setup PM2 pada project
-kalian akan mencobanya pada project sebelumnya. tapi pertama install terlebih dahului
+atau kalian bisa langsung menjalankan command di terminal
 
 ```
-npm install pm2@latest -g
+bun test
+bun test --watch
 ```
 
-setelah kalian install maka buat ecosistemnya 
-
-- ecosystem.config.js
-
-```ts
-// ecosystem.config.js
-const dotenv = require('dotenv');
-dotenv.config();
-
-module.exports = {
-  apps: [
-    {
-      name: "api-gateway",
-      script: "./services/api-gateway/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_GATEWAY,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        USER_SERVICE_URL: process.env.USER_SERVICE_URL,
-        CATALOG_SERVICE_URL: process.env.CATALOG_SERVICE_URL,
-        BORROWING_SERVICE_URL: process.env.BORROWING_SERVICE_URL,
-        REVIEW_SERVICE_URL: process.env.REVIEW_SERVICE_URL,
-        NOTIFICATION_SERVICE_URL: process.env.NOTIFICATION_SERVICE_URL
-      }
-    },
-    {
-      name: "user-service",
-      script: "./services/user-service/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_USER,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        DATABASE_URL: process.env.DATABASE_URL
-      }
-    },
-    {
-      name: "catalog-service",
-      script: "./services/catalog-service/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_CATALOG,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        DATABASE_URL: process.env.DATABASE_URL
-      }
-    },
-    {
-      name: "borrowing-service",
-      script: "./services/borrowing-service/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_BORROWING,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        DATABASE_URL: process.env.DATABASE_URL,
-        CATALOG_SERVICE_URL: process.env.CATALOG_SERVICE_URL,
-        CLOUDAMQP_URL: process.env.CLOUDAMQP_URL
-      }
-    },
-    {
-      name: "review-service",
-      script: "./services/review-service/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_REVIEW,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        DATABASE_URL: process.env.DATABASE_URL,
-        CATALOG_SERVICE_URL: process.env.CATALOG_SERVICE_URL
-      }
-    },
-    {
-      name: "notification-service",
-      script: "./services/notification-service/src/index.ts",
-      watch: true,
-      interpreter: "bun",
-      env: {
-        PORT: process.env.PORT_NOTIFICATION,
-        NODE_ENV: "development",
-        JWT_SECRET: process.env.JWT_SECRET,
-        DATABASE_URL: process.env.DATABASE_URL,
-        CLOUDAMQP_URL: process.env.CLOUDAMQP_URL,
-        SMTP_HOST: process.env.SMTP_HOST,
-        SMTP_PORT: process.env.SMTP_PORT,
-        SMTP_USER: process.env.SMTP_USER,
-        SMTP_PASS: process.env.SMTP_PASS,
-        SMTP_FROM: process.env.SMTP_FROM
-      }
-    }
-  ]
-}
-```
-
-- package.json
-```ts
-{
-  "dependencies": {
-    "dotenv": "latest",
-    "pm2": "latest"
-  },
-  "scripts": {
-    "install-all": "scripts\\install-dependencies.bat",
-    "install-all-unix": "./scripts/install-dependencies.sh",
-    "migrate": "scripts\\migrate-all.bat",
-    "migrate-all-unix": "./scripts/migrate-all.sh",
-    "start": "scripts\\start-services.bat",
-    "start-all-unix": "./scripts/start-services.sh",
-    "stop": "pm2 stop all",
-    "restart": "pm2 restart all",
-    "status": "pm2 status",
-    "logs": "pm2 logs",
-    "dev": "npm run migrate && npm run start"
-  }
-}
-```
-
-lalu buat script untuk mempermudah penginstallan pada project microservice kita
-
-- install-dependencies
-**untuk pengguna windows**
-```bat
-@echo off
-REM scripts/install-dependencies.bat
-
-echo Installing root dependencies...
-bun install
-
-set services=api-gateway user-service catalog-service borrowing-service review-service notification-service
-
-for %%s in (%services%) do (
-    echo Installing dependencies for %%s...
-    cd services/%%s
-    bun install
-    cd ../..
-)
-
-echo Creating .env file from example...
-if not exist .env (
-    copy .env.example .env
-)
-
-echo All dependencies installed!
-echo Please update your .env file with proper values before starting the services.
-```
-
-**untuk pengguna selain windows**
-```sh
-#!/bin/bash
-# scripts/install-dependencies.sh
-
-echo "Installing root dependencies..."
-bun install
-
-services=("api-gateway" "user-service" "catalog-service" "borrowing-service" "review-service" "notification-service")
-
-for service in "${services[@]}"
-do
-    echo "Installing dependencies for $service..."
-    cd "services/$service"
-    bun install
-    cd ../..
-done
-
-echo "Creating .env file from example..."
-if [ ! -f .env ]; then
-    cp .env.example .env
-fi
-
-echo "All dependencies installed!"
-echo "Please update your .env file with proper values before starting the services."
-```
-
-- migrateion database
-lalu buat scripts untuk migration database schema untuk semua service
-
-```bat
-@echo off
-REM scripts/migrate-all.bat
-
-set services=user-service catalog-service borrowing-service review-service notification-service
-
-for %%s in (%services%) do (
-    echo Processing %%s...
-    cd ./services/%%s
-    
-    REM Delete existing migration files if directory exists
-    if exist "src\migrations" (
-        echo Removing existing migration files in src/migrations...
-        del /q "src\migrations\*"
-    )
-    
-    echo Generating new schema...
-    bun run db:generate
-    
-    echo Pushing migrations...
-    bun run db:migrate
-    
-    cd ../..
-    echo Completed %%s migrations
-    echo ------------------------
-)
-
-echo All migrations completed!
-```
-
-```sh 
-# scripts/migrate-all.sh
-#!/bin/bash
-
-# Array of services
-services=("user-service" "catalog-service" "borrowing-service" "review-service" "notification-service")
-
-# Loop through each service
-for service in "${services[@]}"
-do
-  echo "Migrating $service..."
-  cd "./services/$service"
-  
-  # Generate schema
-  echo "Generating schema..."
-  bun run db:generate
-  
-  # Push migrations
-  echo "Pushing migrations..."
-  bun run db:migrate
-  
-  cd ../..
-  echo "Completed $service migrations"
-  echo "------------------------"
-done
-
-echo "All migrations completed!"
-```
-
-setelah kalian install dependencies yang dibutuhkan
-```
-npm install
-```
-
-buat script lagi untuk menjalankan csemua service
-```bat
-@echo off
-REM scripts/start-services.bat
-
-echo Stopping any existing PM2 processes...
-pm2 stop all
-pm2 delete all
-
-echo Starting services...
-
-echo Starting API Gateway...
-pm2 start ecosystem.config.js --only api-gateway
-timeout /t 2
-
-echo Starting User Service...
-pm2 start ecosystem.config.js --only user-service
-timeout /t 2
-
-echo Starting Catalog Service...
-pm2 start ecosystem.config.js --only catalog-service
-timeout /t 2
-
-echo Starting Borrowing Service...
-pm2 start ecosystem.config.js --only borrowing-service
-timeout /t 2
-
-echo Starting Review Service...
-pm2 start ecosystem.config.js --only review-service
-timeout /t 2
-
-echo Starting Notification Service...
-pm2 start ecosystem.config.js --only notification-service
-
-echo All services started!
-echo Showing logs...
-pm2 logs
-```
-
-lalu jalankan project dengan 
-```
-npm run dev
-```
-jika berjalan akan uncul seperti ini
-![alt text](image-1.png)
-
-jika kalian ingin melihat status server yang kalian jalankan dengan comand
-```
-npm run status
-// atau
-pm2 status
-```
-
-atau ingin memonitoring logs dari server kalian
-
-```
-pm2 monit
-
-atau
-
-pm2 logs
-```
+Untuk part 1 kita akhiri dan mari lanjut ke part 2 untuk pembuatan API Gateway dan setup PM2

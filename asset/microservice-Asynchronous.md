@@ -4589,6 +4589,8 @@ lalu jalankan project dengan
 ```
 npm run dev
 ```
+jika berjalan akan uncul seperti ini
+![alt text](image-1.png)
 
 jika sudah kalian bisa melihat status server yang kalian jalankan dengan comand
 ```
