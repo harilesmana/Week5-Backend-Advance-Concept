@@ -1,8 +1,7 @@
 # Week5-Backend-Advance-Concept
 
-Hello phase 1 fighter, ini week terakhir di phase 1. di week ini akan ada banyak Logic Nolep karena kita akan mengerjakan project project backend dengan set up backend yang sudah kita buat di week4. di week ini juga ada berapa theory konsep yang harus kalian pelajari, karena backend itu bukan melulu tentang API.di week5 kita harus membuat dokumentasi backend dengan baik agar front end mudah memahami API yang kita buat. trus kita belajar struktur lain dalam backend seperti perbedaan monolith dan microservices. kita belajar sistem cache memakai redis. dan belajar templating engine menggunakan EJS untuk visualisasi project yang kalian buat.
+Hello phase 1 fighter, ini week terakhir di phase 1. di week ini akan ada banyak Logic Nolep karena kita akan mengerjakan project project backend dengan set up backend baru memakain Bunjs. Tech Stack yang kalian pelajarin di week5 ini adalah teknologi yang sangat terbaru di dunia javascript, tujuannya untuk mempelajari framework & libraries baru ini adalah untuk memperbanyak senjata dan pengalaman kalian dalam tools tools backend di javascript. Typescript akan menjadi game changer kalian, dimana strict typing ini akan menjadikan kalian programmer yang disiplin terhadap penulisan code. Pengenalan Microservices di week5 ini akan jadi gerbang pertama kalian dalam adaptasi backend backend yang kompleks nanti nya ketika sudah bekerja sebagai developer.
 
-sebelum kalian memakai full template backend yang gua kasih di week5, kalian harus menyelesaikan Logic Nolep Inventory System dulu.
 
 
 ## Week 5 :
