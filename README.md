@@ -9,13 +9,17 @@ EJS hanyalah salah satu tools untuk memvisualisasikan aplikasi kalian, jika kali
 
 ## Week 5 :
 
-- Materi TypeScript
-- Materi Bun + Elysia
-- Materi ORM Drizzle (pake neon Postgres)
-- Materi web socket  Bun + Elysia + Drizzle ( studi kasus project)
-- LN Messaging Platform Backend (Bun + Elysia + Drizzle + EJS )
+- [Typescript](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/typescript.md)
+- [Bun.js](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/bun-material.md)
+- [Elysia vs Hono](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/elysia%26hono.md)
+- [ORM Drizzle](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/drizzle-orm.md)
+- [Websocket (project)](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/websocket.md)
+- [Logic Nolep Chat Room](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/ln-ws-chat.md)
 - Materi Microservices
 - Materi Payment Gateway (Stripe)
 - Movie Reservation System  (studi kasus microservices +  bun stacks, dan payment gateway stripe)
 - LN (Microservices + bun stacks , payment gateway stripe)
 - [Group Project Nolep (Phase 1) :exploding_head: :exploding_head: :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/gpn-phase1.md)
+
+
+
