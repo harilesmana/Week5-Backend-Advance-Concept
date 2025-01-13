@@ -4,17 +4,6 @@ Hello phase 1 fighter, ini week terakhir di phase 1. di week ini akan ada banyak
 
 sebelum kalian memakai full template backend yang gua kasih di week5, kalian harus menyelesaikan Logic Nolep Inventory System dulu.
 
-MIGRASI KE WEEK 4:
-- [Logic Nolep (Finishing IS) :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/week5.md)
-- [Backend Testing](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/backend-testing.md)
-- [Inventory System Testing](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/Inventory-testing.md)
-- [Logic Nolep (Inventory System Testing) :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/ln-inventory-testing.md)
-- [Backend Documentation](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/backend-documentation.md)
-- [Logic Nolep (IS Documentation) :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/ln-isDocumentation.md)
-- [Backend Deployment](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/backend-deployment.md)
-- [Logic Nolep (deployment) :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/ln-deployment.md)
-- [Template Engine EJS](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/template-engine-ejs.md)
-
 
 ## Week 5 :
 
