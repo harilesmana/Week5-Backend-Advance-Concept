@@ -2,6 +2,9 @@
 
 Hello phase 1 fighter, ini week terakhir di phase 1. di week ini akan ada banyak Logic Nolep karena kita akan mengerjakan project project backend dengan set up backend baru memakain Bunjs. Tech Stack yang kalian pelajarin di week5 ini adalah teknologi yang sangat terbaru di dunia javascript, tujuannya untuk mempelajari framework & libraries baru ini adalah untuk memperbanyak senjata dan pengalaman kalian dalam tools tools backend di javascript. Typescript akan menjadi game changer kalian, dimana strict typing ini akan menjadikan kalian programmer yang disiplin terhadap penulisan code. Pengenalan Microservices di week5 ini akan jadi gerbang pertama kalian dalam adaptasi backend backend yang kompleks nanti nya ketika sudah bekerja sebagai developer.
 
+Logic nolep di week5 ini fokusnya ke BACKEND yang kalian buat, jadi platform untuk menampilkan kalian hanyalah pembantu saja untuk dinilai. 
+
+EJS hanyalah salah satu tools untuk memvisualisasikan aplikasi kalian, jika kalian ingin menggunakan frontend tools yang lain seperti Html CSS, Reactjs atau Vuejs itu di perbolehkan. Ini akan menjadi penghubung kalian ke phase 2 nanti.
 
 
 ## Week 5 :
