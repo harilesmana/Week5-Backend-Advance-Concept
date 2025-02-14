@@ -1,4 +1,7 @@
 # Typescript
+
+![image](https://github.com/user-attachments/assets/477932ab-33ad-4d1a-9d90-c5c239f1860f)
+
 TypeScript adalah bahasa pemrograman yang dikembangkan oleh Microsoft sebagai *superset* dari JavaScript. Artinya, semua kode JavaScript valid di TypeScript, tetapi TypeScript menambahkan fitur tambahan seperti **static typing** dan **tooling yang lebih baik**. Mari kita pelajari secara detail!
 
 
