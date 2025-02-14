@@ -1,9 +1,30 @@
 # Typescript
 
-![image](https://github.com/user-attachments/assets/477932ab-33ad-4d1a-9d90-c5c239f1860f)
-
 TypeScript adalah bahasa pemrograman yang dikembangkan oleh Microsoft sebagai *superset* dari JavaScript. Artinya, semua kode JavaScript valid di TypeScript, tetapi TypeScript menambahkan fitur tambahan seperti **static typing** dan **tooling yang lebih baik**. Mari kita pelajari secara detail!
 
+***Cara Kerja Typescript***
+
+![image](https://github.com/user-attachments/assets/4bde23d9-fa35-4e8b-a9c3-bc794d25cbcb)
+
+Berikut adalah rangkuman singkat alur kerja TypeScript :
+
+1. **Kode TypeScript (`.ts`)**:
+   - Kode ditulis menggunakan TypeScript, yang mencakup fitur seperti **class**, **interface**, **module**, dan **custom types**.
+
+2. **TypeScript Compiler (`tsc`)**:
+   - Compiler TypeScript (`tsc`) digunakan untuk mengompilasi (atau mentranspilasi) kode TypeScript menjadi JavaScript.
+   - Proses ini memeriksa kesalahan tipe dan masalah lainnya.
+
+3. **Kompilasi/Transpilasi**:
+   - Kode TypeScript diubah menjadi JavaScript. Target versi JavaScript (ES3, ES5, ES6, dll.) dapat ditentukan di file `tsconfig.json`.
+
+4. **Kode JavaScript (`.js`)**:
+   - Hasil kompilasi adalah file JavaScript yang berisi kode JavaScript standar.
+
+5. **Eksekusi Kode JavaScript**:
+   - Kode JavaScript yang dihasilkan dapat dijalankan di mana saja yang mendukung JavaScript, seperti browser atau Node.js.
+
+Alur ini memungkinkan developer menggunakan TypeScript untuk develop yang lebih aman dan terstruktur, sambil tetap memastikan kompatibilitas dengan semua platform JavaScript.
 
 ### **1. Mengapa TypeScript?**
 #### **Perbandingan JavaScript vs TypeScript**
