@@ -1,7 +1,7 @@
 # Movie reservation Project
 pada tahap ini ktia akan bersama2 membuat project untuk study case movie reservation.
 
-# Gambar flow movie reservation
+![image](https://github.com/user-attachments/assets/a77a59e9-cf58-4ee7-8b67-728be28d5c1e)
 
 pada gambar di atas kalian bisa lihat arsitektur project yang akan kita buat. dalam project ini ber-arsitektur microservice yang terdiri dari 5 service dan 6 schema model table dalam satu database kita dan juga ada tambahan untuk payment fitur.
 
@@ -12,7 +12,8 @@ sebelum kita mulai marikita buat schema table dan API yang akan kita buat di set
 
 ### Schema model table
 
-# gambar flow tablenya
+![image](https://github.com/user-attachments/assets/2c2e4594-8eea-4956-8a57-c0fe6923e757)
+
 
 seperti di gambar kita memiliki 6 schema table 
 1. **users**
