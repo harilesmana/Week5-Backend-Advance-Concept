@@ -1,175 +1,323 @@
 # Typescript
-TypeScript adalah bahasa pemrograman yang dibangun di atas JavaScript. Ia menambahkan fitur typing statis pada JavaScript, yang memungkinkan pengembang untuk mendefinisikan tipe data pada variabel, fungsi, dan objek sebelum program dijalankan. TypeScript dirancang untuk membuat pengembangan aplikasi lebih aman dan terstruktur, serta mempermudah debugging dan pemeliharaan kode.
 
-## Apa itu Typesctipt
-TypeScript adalah superset dari JavaScript yang menambahkan type system (sistem tipe data) ke dalam bahasa tersebut. TypeScript dikompilasi menjadi JavaScript murni, yang berarti bahwa kode TypeScript bisa dijalankan di mana saja JavaScript bisa dijalankan, seperti di browser atau server (dengan Node.js).
+TypeScript adalah bahasa pemrograman yang dikembangkan oleh Microsoft sebagai *superset* dari JavaScript. Artinya, semua kode JavaScript valid di TypeScript, tetapi TypeScript menambahkan fitur tambahan seperti **static typing** dan **tooling yang lebih baik**. Mari kita pelajari secara detail!
 
-## Keuntungan Menggunakan TypeScript:
-- Static Typing: Memungkinkan pengembang untuk menentukan tipe data variabel dan parameter fungsi, yang membantu dalam menangkap bug lebih awal di proses pengembangan.
-- Intellisense dan Autocomplete: TypeScript memberikan dukungan yang lebih baik untuk editor seperti VS Code, karena tipe data dapat digunakan untuk memberikan saran kode secara otomatis.
-- OOP dan Fitur Lanjutan: Mendukung fitur-fitur Object-Oriented Programming (OOP) seperti kelas, antarmuka (interfaces), dan modul.
-- Pemeliharaan Kode Lebih Mudah: Dengan tipe data yang eksplisit, proyek besar dengan tim pengembang yang banyak akan lebih mudah dipelihara dan di-debug.
+***Cara Kerja Typescript***
 
-# Fitur Utama TypeScript
+![image](https://github.com/user-attachments/assets/4bde23d9-fa35-4e8b-a9c3-bc794d25cbcb)
 
-## 1. Primitive Types:
+Berikut adalah rangkuman singkat alur kerja TypeScript :
 
-- `number`: Semua numeric values
-- `string`: Text values
-- `boolean`: true/false values
-- `null` and `undefined`
-- `void`: Tidak ada jenisnya (biasanya di pake untuk define sebuah function)
-- `any`: Dinamik typing (Hindari penggunaan ini jika bisa )
-- `never`: Values yang seharusnya tidak ada
+1. **Kode TypeScript (`.ts`)**:
+   - Kode ditulis menggunakan TypeScript, yang mencakup fitur seperti **class**, **interface**, **module**, dan **custom types**.
 
-Contoh:  
-```js
+2. **TypeScript Compiler (`tsc`)**:
+   - Compiler TypeScript (`tsc`) digunakan untuk mengompilasi (atau mentranspilasi) kode TypeScript menjadi JavaScript.
+   - Proses ini memeriksa kesalahan tipe dan masalah lainnya.
+
+3. **Kompilasi/Transpilasi**:
+   - Kode TypeScript diubah menjadi JavaScript. Target versi JavaScript (ES3, ES5, ES6, dll.) dapat ditentukan di file `tsconfig.json`.
+
+4. **Kode JavaScript (`.js`)**:
+   - Hasil kompilasi adalah file JavaScript yang berisi kode JavaScript standar.
+
+5. **Eksekusi Kode JavaScript**:
+   - Kode JavaScript yang dihasilkan dapat dijalankan di mana saja yang mendukung JavaScript, seperti browser atau Node.js.
+
+Alur ini memungkinkan developer menggunakan TypeScript untuk develop yang lebih aman dan terstruktur, sambil tetap memastikan kompatibilitas dengan semua platform JavaScript.
+
+### **1. Mengapa TypeScript?**
+#### **Perbandingan JavaScript vs TypeScript**
+- **JavaScript**: 
+  ```javascript
+  function add(a, b) {
+    return a + b;
+  }
+  console.log(add("5", 3)); // Output: "53" (tidak diinginkan)
+  ```
+  Error tidak terdeteksi sampai runtime.
+
+- **TypeScript**:
+  ```typescript
+  function add(a: number, b: number): number {
+    return a + b;
+  }
+  console.log(add("5", 3)); // Error: Type 'string' is not assignable to type 'number'.
+  ```
+  Error langsung terdeteksi saat penulisan kode (compile-time).
+
+#### **Keuntungan TypeScript**
+- **Deteksi Error Lebih Awal**: Sebelum kode dijalankan.
+- **Kode Lebih Mudah Dipahami**: Tipe data membuat logika lebih jelas.
+- **Autocomplete Lebih Cerdas**: Editor seperti VS Code bisa menyarankan properti objek.
+- **Dukungan OOP**: Class, interface, inheritance, dll.
+
+---
+
+### **2. Setup TypeScript**
+#### **Instalasi**
+1. Install Node.js: [https://nodejs.org](https://nodejs.org)
+2. Install TypeScript secara global:
+   ```bash
+   npm install -g typescript
+   ```
+3. Cek versi:
+   ```bash
+   tsc --version
+   ```
+
+#### **Proyek Pertama**
+1. Buat file `index.ts`:
+   ```typescript
+   const message: string = "Hello, TypeScript!";
+   console.log(message);
+   ```
+2. Compile ke JavaScript:
+   ```bash
+   tsc index.ts
+   ```
+3. Jalankan hasil kompilasi:
+   ```bash
+   node index.js
+   ```
+
+Sebenarnya banyak libraryjs sudah otomatis ter setup dengan konfigurasi Typescript, jadi kalian tidak perlu manual install Typescript ke dalam project kalian.
+Seperti `but init` disini standardnya sudah menggunakan Typescript>
+
+![image](https://github.com/user-attachments/assets/d912e92d-2aad-4799-89cb-682b83a5ad1b)
+
+---
+
+### **3. Tipe Data Dasar (Primitive Types)**
+#### **Daftar Tipe**
+- `number`: Angka (integer, float, dll).
+- `string`: Teks.
+- `boolean`: `true` atau `false`.
+- `null`/`undefined`: Nilai kosong.
+- `void`: Fungsi yang tidak mengembalikan nilai.
+- `any`: Tipe dinamis (hindari sebisa mungkin).
+- `never`: Untuk fungsi yang selalu throw error atau infinite loop.
+
+#### **Contoh Penggunaan**
+```typescript
 let age: number = 25;
-let name: string = "John";
-let isStudent: boolean = true;
-let undifine: null = null;
-let callFunction: void = () => {};
-let allType: any = [age,isStudent,name,callFunction];
-type NonNullable<T> = T extends null | undefined ? never : T;
-```
-## 2. Complex Types
-Complex type biasanya terjadi pada di variable yang bisa menampung beberapa variable seperti array, tupple, object
+let name: string = "Alice";
+let isActive: boolean = true;
 
-Contoh: 
-```js
-// Array
+function logError(message: string): void {
+  console.error(message);
+}
+
+let dynamicValue: any = "Ini bisa apa saja";
+dynamicValue = 42; // Tidak error, tapi tidak direkomendasikan.
+
+function throwError(message: string): never {
+  throw new Error(message);
+}
+```
+
+---
+
+### **4. Tipe Data Kompleks**
+#### **Array**
+```typescript
 let numbers: number[] = [1, 2, 3];
 let names: Array<string> = ["Alice", "Bob"];
+```
 
-// Tuple
-let coordinate: [number, number] = [10, 20];
-let userInfo: [string, number] = ["John", 30];
+#### **Tuple**
+Array dengan tipe data yang sudah ditentukan untuk setiap indeks.
+```typescript
+let user: [string, number, boolean] = ["Alice", 30, true];
+user[0] = "Bob"; // Valid
+user[1] = "30"; // Error: Type 'string' is not assignable to type 'number'.
+```
 
-// Object
-let user: {
-    name: string;
-    age: number;
-    email?: string;  // Optional property
+#### **Object**
+```typescript
+let person: {
+  name: string;
+  age: number;
+  isStudent?: boolean; // Properti opsional
 } = {
-    name: "John",
-    age: 30
+  name: "Alice",
+  age: 25,
 };
 ```
 
-##   3. Interfaces dan Alias
-Interface: Digunakan untuk mendefinisikan struktur objek dan kontrak yang harus diikuti oleh suatu objek. Interface dapat digunakan untuk mendeklarasikan kelas dan objek, serta dapat digunakan untuk mendefinisikan tipe fungsi.
+---
 
-Type Alias: Digunakan untuk memberikan nama baru untuk tipe yang ada (alias). Tipe ini bisa berupa primitive types, tuples, union types, intersection types, objek, dan bahkan fungsi.
-
-Contoh: 
-```js
-// define type pada interface
-interface Orang {
-  nama: string;
-  usia: number;
+### **5. Interface dan Type Alias**
+#### **Interface**
+- Untuk mendefinisikan bentuk objek.
+- Bisa extends atau di-implement oleh class.
+```typescript
+interface Person {
+  name: string;
+  age: number;
 }
 
-let orang: Orang = {
-  nama: "Jane",
-  usia: 28
-};
-
-// define type pada alias
-type Produk = {
-  nama: string;
-  harga: number;
-}
-
-let produk: Produk = {
-  nama: "Laptop",
-  harga: 15000000
+const alice: Person = {
+  name: "Alice",
+  age: 25,
 };
 ```
 
-## 4. Functions
-Penggunaan typescript pada function dilakukan pada saat mendifine variable pada parameter yang akan masuk ke dalam function
+#### **Type Alias**
+- Memberi nama baru ke tipe yang sudah ada.
+- Cocok untuk union atau intersection types.
+```typescript
+type ID = string | number;
+type Coordinates = [number, number];
+type User = Person & { id: ID }; // Intersection type
+```
 
-Contoh: 
-```js
-// Function type definition
-type MathOperation = (a: number, b: number) => number;
+---
 
-// Function implementation
-const add: MathOperation = (a, b) => a + b;
+### **6. Fungsi**
+#### **Parameter dan Return Type**
+```typescript
+function multiply(a: number, b: number): number {
+  return a * b;
+}
+```
 
-// Function with optional and default parameters
+#### **Optional dan Default Parameters**
+```typescript
 function greet(name: string, greeting: string = "Hello"): string {
-    return `${greeting}, ${name}!`;
+  return `${greeting}, ${name}!`;
 }
 
+console.log(greet("Alice")); // Output: "Hello, Alice!"
+console.log(greet("Bob", "Hi")); // Output: "Hi, Bob!"
 ```
 
-## 5. Generics
-Generics memungkinkan kalian untuk membuat fungsi atau kelas yang dapat bekerja dengan tipe data yang berbeda secara fleksibel tanpa mengorbankan keamanan tipe.
-
-Contoh: 
-```js
-// Generic function
-function identity<T>(arg: T): T {
-    return arg;
-}
-
-// Generic interface
-interface Container<T> {
-    value: T;
-    getValue(): T;
-}
-
-// Generic class
-class Box<T> {
-    constructor(private content: T) {}
-    getContent(): T {
-        return this.content;
-    }
-}
-
+#### **Arrow Function**
+```typescript
+const divide = (a: number, b: number): number => a / b;
 ```
 
-## 6. Advanced Types
-Berikut adalah tehnik2 Advance type pada typescript seperti Union Type, Intersection Type, dan Type Guards
-```js
-// Union Type
-type Employee = Person & Workable;
+---
 
-// Intersection Type
-type Employee = Person & Workable;
+### **7. Generics**
+Membuat komponen yang bisa bekerja dengan berbagai tipe data.
+```typescript
+function getFirst<T>(arr: T[]): T {
+  return arr[0];
+}
 
-// Type Guards
-function isString(value: unknown): value is string {
-  return typeof value === "string";
+const numbers = [1, 2, 3];
+const firstNumber = getFirst(numbers); // Tipe firstNumber: number
+
+const strings = ["a", "b", "c"];
+const firstString = getFirst(strings); // Tipe firstString: string
+```
+
+---
+
+### **8. Advanced Types**
+#### **Union Type**
+Variabel bisa memiliki beberapa tipe.
+```typescript
+let id: string | number = "ABC123";
+id = 123; // Valid
+```
+
+#### **Type Guards**
+Memeriksa tipe data saat runtime.
+```typescript
+function printId(id: string | number) {
+  if (typeof id === "string") {
+    console.log(id.toUpperCase());
+  } else {
+    console.log(id.toFixed(2));
+  }
 }
 ```
 
-## 7. Decorators
+---
 
+### **9. Class dan OOP**
+```typescript
+class Animal {
+  constructor(public name: string) {} // Modifier 'public' otomatis assign ke properti
 
-```js
-function Component(constructor: Function) {
-  console.log(`Class ${constructor.name} telah didekorasi`);
-}
-
-@Component
-class MyComponent {
-  constructor() {
-    console.log('MyComponent instance created');
+  speak(): void {
+    console.log(`${this.name} makes a sound.`);
   }
 }
 
-// Output:
-// Class MyComponent telah didekorasi
-// MyComponent instance created
+class Dog extends Animal {
+  speak(): void {
+    console.log(`${this.name} barks!`);
+  }
+}
+
+const dog = new Dog("Buddy");
+dog.speak(); // Output: "Buddy barks!"
 ```
 
-# Best Practices
-hal - hal yang baik dan benar pada saat menggunakan typescript:
-- Menyalakan Strict mode di tsconfig.json
-- hindari pneggunaan `Any`
-- gunakan interface pada variable berbentuk Object
-- gunakan union types dari pada menggunakan enums
-- menulis documentasi code sendiri
-- penulisan nama variable yang cocok
+---
+
+### **10. Decorators**
+Menambahkan perilaku ke class, method, atau properti.
+```typescript
+function Log(target: any, methodName: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+  descriptor.value = function (...args: any[]) {
+    console.log(`Method ${methodName} dipanggil dengan args: ${args}`);
+    return originalMethod.apply(this, args);
+  };
+}
+
+class Calculator {
+  @Log
+  add(a: number, b: number): number {
+    return a + b;
+  }
+}
+
+const calc = new Calculator();
+calc.add(2, 3); // Output: "Method add dipanggil dengan args: 2,3"
+```
+
+---
+
+### **Best Practices**
+1. **Aktifkan Strict Mode**: Di `tsconfig.json`, set `strict: true`.
+2. **Hindari `any`**: Gunakan `unknown` atau tipe yang lebih spesifik.
+3. **Gunakan Interface untuk Objek**: Lebih mudah di-extend.
+4. **Union Type daripada Enum**:
+   ```typescript
+   type Status = "active" | "inactive" | "pending"; // Lebih direkomendasikan
+   ```
+5. **Komentar dan Dokumentasi**:
+   ```typescript
+   /**
+    * Menambahkan dua angka.
+    * @param a Angka pertama.
+    * @param b Angka kedua.
+    * @returns Jumlah dari a dan b.
+    */
+   function add(a: number, b: number): number {
+     return a + b;
+   }
+   ```
+
+---
+
+### **Error Umum dan Solusi**
+1. **Type 'X' is not assignable to type 'Y'**:
+   - Pastikan tipe data variabel sesuai dengan nilai yang diassign.
+2. **Object is possibly 'null' or 'undefined'**:
+   - Gunakan optional chaining (`?.`) atau null check.
+   ```typescript
+   const name = user?.name || "Default";
+   ```
+
+---
+
+Dengan memahami konsep-konsep di atas, Kalian sudah siap membangun aplikasi menggunakan TypeScript! 
+Mulailah dengan project kecil dan secara bertahap eksplor fitur-fitur lanjutan seperti **utility types** (`Partial`, `Pick`, dll) dan **namespace**. 
+
+Happy coding! 🚀
