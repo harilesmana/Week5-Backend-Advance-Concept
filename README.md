@@ -19,8 +19,8 @@ EJS hanyalah salah satu tools untuk memvisualisasikan aplikasi kalian, jika kali
 - [Materi Microservices (asynchronous) part1](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/microservice-Asynchronous.md)
 - [Materi Microservices (asynchronous) part2](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/microservice-Asynchronous-part2.md)
 - [Materi Payment Gateway (Stripe)](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/payment-gateway.md)
-- Movie Reservation System  (studi kasus microservices +  bun stacks, dan payment gateway stripe)
-- LN (Microservices + bun stacks , payment gateway stripe)
+- [Movie Reservation System  (studi kasus microservices +  bun stacks, dan payment gateway stripe)](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/study_material/movie-reservation-studycase.md)
+- [LN (Microservices + bun stacks , payment gateway stripe)](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/ln-microservice.md)
 - [Group Project Nolep (Phase 1) :exploding_head: :exploding_head: :exploding_head: ](https://github.com/RPN-Phase-1/Week5-Backend-Advance-Concept/blob/main/logic_nolep/gpn-phase1.md)
 
 
