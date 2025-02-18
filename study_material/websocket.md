@@ -62,59 +62,213 @@ Beberapa hal yang perlu diperhatikan terkait keamanan:
 - **Rate Limiting**: Batasi jumlah koneksi WebSocket yang dapat dibuat dari satu alamat IP untuk mencegah serangan DoS.
 - **Validasi Pesan**: Pastikan pesan yang diterima valid dan tidak menyebabkan eksekusi kode berbahaya.
 
-## 5. WebSocket Library dan Framework
+## 5. WebSocket ElysiaJs & HonoJs
 
-1. ws (Node.js WebSocket Library)
+Jika Kalian memakai Elysia (sebuah framework untuk Bun.js), Kalian dapat memanfaatkan integrasi WebSocket dengan cara serupa dengan bunjs.
+Elysia.js menyediakan dukungan WebSocket yang kuat, memungkinkan Kalian membangun aplikasi real-time dengan mudah. Berikut penjelasan komprehensif tentang cara kerja WebSocket di Elysia:
 
-- instalasi
-```
-npm install ws
-```
+### Dasar-dasar WebSocket di Elysia
 
-- penggunaan
-```js
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 8080 });
+Di Elysia, fungsi WebSocket tersedia secara langsung tanpa memerlukan plugin tambahan. Kalian dapat mendefinisikan endpoint WebSocket menggunakan metode `.ws()`:
 
-wss.on('connection', (ws) => {
-  ws.on('message', (message) => {
-    console.log('Pesan diterima: ' + message);
-  });
-});
-```
+```typescript
+import { Elysia } from 'elysia'
 
-2. Socket.io
-Socket.io adalah library JavaScript yang memberikan WebSocket dan fallback untuk komunikasi real-time di Node.js.
-
-- instalasi
-```
-npm install socket.io
-```
-
-- Penggunaan Server
-```js
-const io = require('socket.io')(server);
-
-io.on('connection', (socket) => {
-  console.log('User connected');
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
-  });
-});
+const app = new Elysia()
+  .ws('/ws', {
+    // Handler WebSocket di sini
+    open(ws) {
+      console.log('Koneksi dibuka')
+    },
+    message(ws, message) {
+      console.log('Diterima:', message)
+      ws.send(`Echo: ${message}`)
+    },
+    close(ws, code, message) {
+      console.log(`Koneksi ditutup: ${code} ${message}`)
+    },
+    error(ws, error) {
+      console.error('Error WebSocket:', error)
+    }
+  })
+  .listen(3000)
 ```
 
-- Penggunaan Klien: 
-```js
-const socket = io();
-socket.emit('chat message', 'Hello World');
-socket.on('chat message', (msg) => {
-  console.log(msg);
-});
+### Handler WebSocket
+
+Elysia menyediakan beberapa handler untuk berbagai event WebSocket:
+
+1. **open**: Dipicu ketika klien membuat koneksi
+2. **message**: Dipicu ketika klien mengirim pesan
+3. **close**: Dipicu ketika koneksi ditutup
+4. **error**: Dipicu ketika terjadi kesalahan
+
+## Konteks WebSocket (objek ws)
+
+Objek `ws` menyediakan metode dan properti untuk berinteraksi dengan koneksi WebSocket:
+
+- `ws.send(data)`: Mengirim data ke klien
+- `ws.close(code?, reason?)`: Menutup koneksi
+- `ws.publish(topic, data)`: Mempublikasikan data ke topik tertentu (untuk pub/sub)
+- `ws.subscribe(topic)`: Berlangganan ke topik
+- `ws.unsubscribe(topic)`: Berhenti berlangganan dari topik
+- `ws.id`: Pengenal unik untuk koneksi
+- `ws.data`: Data yang dibagikan sepanjang siklus hidup permintaan
+
+### Menyiarkan Pesan (Broadcasting)
+
+Untuk menyiarkan pesan ke semua klien yang terhubung, Kalian biasanya memelihara daftar koneksi aktif:
+
+```typescript
+const app = new Elysia()
+  .state('connections', new Set())
+  .ws('/ws', {
+    open(ws) {
+      app.store.connections.add(ws)
+    },
+    message(ws, message) {
+      // Siarkan ke semua koneksi
+      for (const connection of app.store.connections) {
+        connection.send(message)
+      }
+    },
+    close(ws) {
+      app.store.connections.delete(ws)
+    }
+  })
+  .listen(3000)
 ```
 
-3. Elysia WebSocket (Dalam Framework Elysia)
+### WebSocket dengan Autentikasi
 
-Jika kamu bekerja dengan Elysia (sebuah framework untuk Node.js), kamu dapat memanfaatkan integrasi WebSocket dengan cara serupa. Dokumentasi dan penggunaan spesifik dapat dilihat di dokumentasi resmi framework tersebut.
+Kalian dapat mengimplementasikan autentikasi untuk koneksi WebSocket:
+
+```typescript
+const app = new Elysia()
+  .ws('/ws', {
+    beforeHandle: ({ request, set }) => {
+      const token = new URL(request.url).searchParams.get('token')
+      if (!token || !validateToken(token)) {
+        set.status = 401
+        return 'Tidak Diizinkan'
+      }
+    },
+    open(ws) {
+      // Koneksi sudah diautentikasi
+      console.log('Koneksi terautentikasi dibuka')
+    }
+  })
+  .listen(3000)
+```
+
+### Pola Pub/Sub
+
+WebSocket Elysia mendukung pola pub/sub untuk komunikasi berbasis topik:
+
+```typescript
+const app = new Elysia()
+  .ws('/chat/:room', {
+    open(ws) {
+      const { room } = ws.data.params
+      ws.subscribe(room)
+      ws.publish(room, `Pengguna bergabung ke ${room}`)
+    },
+    message(ws, message) {
+      const { room } = ws.data.params
+      ws.publish(room, message)
+    },
+    close(ws) {
+      const { room } = ws.data.params
+      ws.unsubscribe(room)
+      ws.publish(room, `Pengguna meninggalkan ${room}`)
+    }
+  })
+  .listen(3000)
+```
+
+### Implementasi Sisi Klien
+
+Berikut cara menghubungkan ke endpoint WebSocket Elysia dari browser:
+
+```javascript
+const ws = new WebSocket(`ws://${window.location.host}/ws`)
+
+ws.onopen = () => {
+  console.log('Terhubung ke server')
+  ws.send('Halo, server!')
+}
+
+ws.onmessage = (event) => {
+  console.log('Diterima:', event.data)
+}
+
+ws.onclose = (event) => {
+  console.log('Koneksi ditutup:', event.code, event.reason)
+}
+
+ws.onerror = (error) => {
+  console.error('Error WebSocket:', error)
+}
+```
+
+### Penanganan Data JSON
+
+Untuk data terstruktur, Kalian bisa menggunakan JSON:
+
+```typescript
+// Server
+const app = new Elysia()
+  .ws('/ws', {
+    message(ws, message) {
+      if (typeof message === 'string') {
+        try {
+          const data = JSON.parse(message)
+          // Tangani data terstruktur
+          ws.send(JSON.stringify({ status: 'diterima', data }))
+        } catch (e) {
+          ws.send(JSON.stringify({ error: 'JSON tidak valid' }))
+        }
+      }
+    }
+  })
+  .listen(3000)
+
+// Klien
+ws.send(JSON.stringify({ type: 'chat', message: 'Halo!', user: 'Alice' }))
+```
+
+### WebSocket dengan Middleware
+
+Kalian dapat menerapkan middleware ke rute WebSocket:
+
+```typescript
+const logger = (ws) => {
+  console.log(`Koneksi baru: ${ws.id}`)
+  return () => {
+    console.log(`Koneksi ditutup: ${ws.id}`)
+  }
+}
+
+const app = new Elysia()
+  .ws('/ws', {
+    beforeHandle: [logger],
+    message(ws, message) {
+      ws.send(`Echo: ${message}`)
+    }
+  })
+  .listen(3000)
+```
+
+Untuk detail pembelajaran websocket elysia kalian bisa langsung cek dokumentasinya:
+
+https://elysiajs.com/patterns/websocket
+
+Buat kalian yang menggunakan hono, konsep dasar dan cara penggunaanya hampir mirip dengan elysia.
+
+kalian bisa langsung explore websocket build in dari honojs :
+
+https://hono.dev/docs/helpers/websocket
+
 
 # Studi Kasus Project Websocket menggunakan Bun + Elysia + Drizzle
 
