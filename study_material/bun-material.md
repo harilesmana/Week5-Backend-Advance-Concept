@@ -144,3 +144,5 @@ Contoh dengan Express.js:
 bun add express
 ```
 
+
+***Kedepannya untuk pembelajaran week5, kalian diwajibkan untuk meggunakan Bun + Typescript!***
