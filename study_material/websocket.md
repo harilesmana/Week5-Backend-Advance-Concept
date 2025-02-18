@@ -57,7 +57,7 @@ WebSocket menggunakan protokol wss:// (seperti HTTPS) untuk mengenkripsi komunik
 
 Beberapa hal yang perlu diperhatikan terkait keamanan:
 
-- **Penggunaan WSS**: Selalu gunakan WebSocket dengan wss:// untuk mengenkripsi koneksi.
+- **Useran WSS**: Selalu gunakan WebSocket dengan wss:// untuk mengenkripsi koneksi.
 - **Autentikasi**: Pastikan klien terautentikasi dengan benar sebelum membuka koneksi WebSocket.
 - **Rate Limiting**: Batasi jumlah koneksi WebSocket yang dapat dibuat dari satu alamat IP untuk mencegah serangan DoS.
 - **Validasi Pesan**: Pastikan pesan yang diterima valid dan tidak menyebabkan eksekusi kode berbahaya.
@@ -171,7 +171,7 @@ const app = new Elysia()
     open(ws) {
       const { room } = ws.data.params
       ws.subscribe(room)
-      ws.publish(room, `Pengguna bergabung ke ${room}`)
+      ws.publish(room, `User bergabung ke ${room}`)
     },
     message(ws, message) {
       const { room } = ws.data.params
@@ -180,7 +180,7 @@ const app = new Elysia()
     close(ws) {
       const { room } = ws.data.params
       ws.unsubscribe(room)
-      ws.publish(room, `Pengguna meninggalkan ${room}`)
+      ws.publish(room, `User meninggalkan ${room}`)
     }
   })
   .listen(3000)
@@ -263,16 +263,93 @@ Untuk detail pembelajaran websocket elysia kalian bisa langsung cek dokumentasin
 
 https://elysiajs.com/patterns/websocket
 
-Buat kalian yang menggunakan hono, konsep dasar dan cara penggunaanya hampir mirip dengan elysia.
+Buat kalian yang menggunakan hono, konsep dasar dan cara Penggunaanya hampir mirip dengan elysia.
 
 kalian bisa langsung explore websocket build in dari honojs :
 
 https://hono.dev/docs/helpers/websocket
 
+***EXPLORE :***
+Ini tugas optional kalau kalian mau explore tools websocket yang lain dari bawaan elysia atau hono.
+
+Socket.IO adalah sebuah library JavaScript untuk aplikasi web real-time. Socket.IO memungkinkan komunikasi dua arah secara real-time antara server web dan klien (browser). 
+Pelajari dan explorasi pada library Socket.IO karena akan sangat berguna sekali pada development fullstack apps di phase 2 nanti, jika ada kebutuhan real time API.
+
+https://socket.io/
 
 # Studi Kasus Project Websocket menggunakan Bun + Elysia + Drizzle
 
-## 1. Setup project
+Project ini adalah aplikasi chat real-time menggunakan teknologi:
+
+1. **Bun** - JavaScript runtime yang cepat dan efisien, alternatif dari Node.js
+2. **Elysia** - Framework web yang ringan dan cepat untuk Bun
+3. **Drizzle** - ORM (Object-Relational Mapping) untuk database
+4. **Neon** - Database PostgreSQL berbasis cloud
+
+Aplikasi ini memungkinkan user untuk melakukan chat secara real-time menggunakan WebSocket, serta menyediakan REST API untuk interaksi dengan aplikasi.
+
+## Fitur-fitur Utama:
+
+1. Chat real-time melalui WebSocket
+2. Penyimpanan pesan di database
+3. Manajemen User (pembuatan User, pelacakan aktivitas)
+4. REST API untuk berbagai operasi
+5. Dokumentasi Swagger
+
+## Flow Aplikasi
+
+![image](https://github.com/user-attachments/assets/d974e525-8d9e-49cf-bd99-0d99e9fe96fa)
+
+Berikut diagram alur (flow) dari aplikasi chat real-time ini:
+
+### 1. Inisialisasi Aplikasi
+- Aplikasi dimulai dengan menginisialisasi layanan: `ChatService` dan `UserService`
+- Koneksi ke database Neon dibuat menggunakan Drizzle ORM
+- Elysia menyiapkan endpoint HTTP dan WebSocket
+
+### 2. Koneksi User
+Ketika User terhubung ke aplikasi:
+1. User mengakses aplikasi dan melakukan koneksi WebSocket ke `ws://localhost:3000/ws`
+2. User mengirim pesan "join" dengan username mereka
+3. Server:
+   - Menciptakan/mengambil User dari database
+   - Menambahkan koneksi WebSocket ke daftar User aktif
+   - Mengirim pesan sambutan dan pesan-pesan terbaru ke User
+   - Memberitahu User lain bahwa User baru telah bergabung
+
+### 3. Pengiriman Pesan
+Ketika User ingin mengirim pesan:
+1. User mengirim pesan dengan format `{type: 'message', username: '...', content: '...'}`
+2. Server:
+   - Menyimpan pesan ke database melalui `ChatService`
+   - Menyiarkan (broadcast) pesan ke semua User yang terhubung
+
+### 4. User Keluar
+Ketika User meninggalkan chat:
+1. User mengirim pesan "leave" atau koneksi WebSocket terputus
+2. Server:
+   - Memperbarui waktu terakhir User terlihat di database
+   - Menghapus User dari daftar User aktif
+   - Memberitahu User lain bahwa User tersebut telah meninggalkan chat
+
+## REST API Endpoints
+
+Selain WebSocket, aplikasi juga menyediakan REST API:
+- `GET /messages` - Mendapatkan pesan terbaru
+- `POST /messages` - Mengirim pesan baru (akan disiarkan ke semua klien WebSocket)
+- `GET /users/active` - Mendapatkan daftar User aktif
+- `POST /users` - Membuat User baru
+- `GET /ws-info` - Mendapatkan informasi tentang koneksi WebSocket
+
+## Struktur Database
+
+Database terdiri dari dua tabel utama:
+1. `users` - Menyimpan informasi User (username, waktu terakhir terlihat)
+2. `messages` - Menyimpan pesan chat (konten, User pengirim, waktu)
+
+## Start Develop Simple Chat App
+
+### 1. Setup project
 
 seperti biasa kalian buat folder project untuk membuat ws app chat
 
@@ -309,7 +386,7 @@ ws-chat/
 └── package.json
 ```
 
-## 2. Code
+### 2. Code
 
 kalian bisa tiru code berikut dan di taruh ke dalam file yang sesuai
 
@@ -738,7 +815,7 @@ export default {
 } satisfies Config;
 ```
 
-## 3. .ENV and Running
+### 3. .ENV and Running
 
 1. buat file .env di dalam project mu dan masukan variable berikut
 ```
@@ -757,3 +834,50 @@ pertama migrate terlebih dahulu schema databasenya lalu di buse ke dalam databas
 
 setelah kalian run dengan `bun run dev` kalian bisa buka documentation di swagger `http://localhost:300/swagger` 
 lalu untuk mencobanya pertama kalian buat user terlebih dahulu lalu ke api message dan coba api tersebut.
+
+
+# Cara Testing Realtime
+
+Untuk menguji aplikasi chat real-time ini, ikuti langkah-langkah berikut:
+
+### 1. Testing dengan Browser
+Aplikasi menyediakan halaman tester WebSocket yang bisa diakses di `http://localhost:3000/test`
+
+### 2. Testing dengan Swagger
+1. Buka dokumentasi Swagger di `http://localhost:3000/swagger`
+2. Gunakan endpoint `/users` untuk membuat User baru
+3. Uji endpoint `/messages` untuk mengirim dan mendapatkan pesan
+
+### 3. Testing WebSocket dengan Tool Eksternal
+Kalian juga bisa menggunakan alat seperti Postman atau WebSocket client lainnya:
+
+1. Hubungkan ke `ws://localhost:3000/ws`
+2. Kirim pesan bergabung:
+   ```json
+   {
+     "type": "join",
+     "username": "testuser123"
+   }
+   ```
+3. Kirim pesan chat:
+   ```json
+   {
+     "type": "message",
+     "username": "testuser123",
+     "content": "Halo semua!"
+   }
+   ```
+4. Pantau respons server dan pesan dari User lain
+
+### 4. Testing Simultan
+Untuk menguji aspek real-time:
+1. Buka beberapa jendela browser atau tab berbeda
+2. Hubungkan masing-masing ke aplikasi dengan username berbeda
+3. Kirim pesan dari satu klien dan verifikasi bahwa pesan tersebut muncul di semua klien lain secara instan
+
+### 5. Testing Fitur Khusus
+- Coba hubungkan beberapa User dan kirim pesan antar mereka
+- Verifikasi bahwa pesan disimpan di database (bisa dicek melalui endpoint GET /messages)
+- Coba User keluar dan masuk kembali untuk memverifikasi pesan riwayat
+
+Dengan langkah-langkah ini, Kalian dapat memverifikasi bahwa aplikasi chat berfungsi dengan baik secara real-time, pesan disimpan dengan benar, dan komunikasi antar User berjalan lancar.
