@@ -1,5 +1,6 @@
 # Websocket
 ## 1. Apa itu Websocket
+![image](https://github.com/user-attachments/assets/73e9e8aa-e3cf-42e9-a553-7dfbf8d006f2)
 
 WebSocket adalah protokol komunikasi dua arah yang memungkinkan pertukaran data secara real-time antara server dan klien melalui koneksi TCP yang persisten. WebSocket memungkinkan komunikasi lebih efisien dibandingkan dengan HTTP karena koneksi terbuka dan tetap terjaga sepanjang sesi komunikasi.
 
