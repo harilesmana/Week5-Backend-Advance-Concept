@@ -11,9 +11,9 @@ Drizzle menyediakan API yang cukup intuitif dan tidak memerlukan banyak boilerpl
 ## Fitur dan Keunggulan
 Drizzle ORM menonjol karena beberapa alasan:
 
-- **Keamanan Tipe**: Setiap kueri yang kalian tulis diketik sepenuhnya, membantu menangkap kesalahan pada waktu kompilasi
-- **Pembuat Kueri mirip SQL**: Sintaksisnya sangat mirip SQL, membuatnya intuitif bagi pengembang SQL
-- **Kinerja**: Overhead minimal dibandingkan dengan kueri SQL mentah
+- **Keamanan Tipe**: Setiap query yang kalian tulis diketik sepenuhnya, membantu menangkap kesalahan pada waktu kompilasi
+- **Pembuat query mirip SQL**: Sintaksisnya sangat mirip SQL, membuatnya intuitif bagi pengembang SQL
+- **Kinerja**: Overhead minimal dibandingkan dengan query SQL mentah
 - **Deklarasi Skema**: Definisi skema yang jelas dan aman terhadap tipe
 - **Migrasi**: Dukungan bawaan untuk migrasi basis data
 - **Fitur PostgreSQL**: Dukungan luar biasa untuk fitur khusus PostgreSQL
