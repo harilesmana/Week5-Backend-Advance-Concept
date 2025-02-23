@@ -3045,3 +3045,73 @@ console.log(`🦊 Seat Reservastion service running at ${app.server?.hostname}:$
 lalu kita bisa jalankan dengan `bun dev` lalu ke `localhost:3005` untuk buka documentasinya di `localhost:3005/docs`.
 
 karna kita menggunakan testing sandbox di stripe jangan menggunakan kartu kredit asli kalian. gunakan kartu kredit code testing yang sudah di siapkan oleh stripe kalian bisa lihat di link ini https://docs.stripe.com/testing 
+
+
+# Testing Project
+
+setelah kalian menyelesaikan code di atas untuk semua service saatnya kita testing manual dan alur kerjanya
+ini urutan alurnya:
+1. register account
+2. login account
+3. create theather, movie, movie schedule
+4. order tickets
+
+mari kita testing
+
+## register
+kita bisa melakukan register di service user dengan localhost `http://localhost:3001/docs#tag/default/POST/auth/register`
+
+![image](https://github.com/user-attachments/assets/393d720d-f61e-43bf-85ba-9a89ae731139)
+
+## login
+setelah kita register baru kita bisa login dengan account yang kita register tadi di `http://localhost:3001/docs#tag/default/POST/auth/login`
+jika login berhasil maka kalian akan mendapatkan return token. kurang lebih seperti ini
+`eyJhbGciOiJIUzI1NiJ9.eyJyZWZyZXNoIjp7Im1heEFnZSI6NjA0ODAwLCJodHRwT25seSI6dHJ1ZX0sInVzZXJJZCI6IjMyY2NhOTkxLTQ4NTYtNDE3OS04ODI3LTNkOTA1MjYxMmFmMyIsImVtYWlsIjoidGVya29pempva3NvbkBnbWFpbC5jb20iLCJwaG9uZSI6IjA5ODc2NTQzMjExIn0.akkxmSKQMZIiYAtXT9XzzRgfk0Rv606utq7u7Lc3riA`
+
+jwt ini akan langusung tersimpan di dalam cookie. kalian bisa check di dalam inpect -> aplplication -> Cookies -> auth.
+
+kurang leih akan terlihat seperti ini
+
+![image](https://github.com/user-attachments/assets/94344753-e728-4ff0-b5b3-21eeed65be3e)
+
+## theather, movie, movie schedule and seat
+
+jika kalian sudah login maka kalian sudah bisa membuat data untuk theater, movie, movie schedule dan seat reservation.
+
+mari kita coba pembuatan *theater* di link ini `http://localhost:3002/docs#tag/default/POST/api/theaters/`
+
+![image](https://github.com/user-attachments/assets/826075a8-8992-413b-96f5-44a37811d8c4)
+
+lalu ke pembuatan *movie* dan *movie schedule* di `http://localhost:3004/docs`
+
+- movie
+`http://localhost:3004/docs#tag/default/POST/api/movies/`
+![image](https://github.com/user-attachments/assets/5710f9ea-0f9a-4ddd-9a9d-f27f042d9af5)
+
+- movie schedule
+`http://localhost:3004/docs#tag/default/POST/api/schedules/`
+![image](https://github.com/user-attachments/assets/576d3c06-95de-4edb-8f1b-079e51d85395)
+
+setelah movie mari kita buat untuk *seat* nya
+`http://localhost:3003/docs#tag/default/POST/api/reservations/`
+![image](https://github.com/user-attachments/assets/8f4268f8-f986-4782-8f9e-2f21b76b87ca)
+
+## order ticket
+setelah membuat seat yang memiliki jadwal tayang movie, kita bisa memesan ticket untuk kursi tersebut di `http://localhost:3005/docs#tag/default/POST/api/tickets/orderTickets` 
+
+![image](https://github.com/user-attachments/assets/092e7759-b08e-4f7e-a940-a641e3f81448)
+
+setelah berhasil order ticket maka akan muncul link *checkoutSession* di response untuk melakukan pembayaran atau bisa di check di gmail anda karna sudah terintegrate. ***PASTIKAN BAHWA EMAIL YANG KALIAN GUNAKAN SAMA DAN BISA DI BUKA BENAR*** maka akan muncul seperti ini
+
+![image](https://github.com/user-attachments/assets/104e11fe-3217-4fc2-918d-d088fd57386c)
+
+lalu bisa kita buka link nya dan akan langsung masuk ke weisite stripe seperti ini
+
+![image](https://github.com/user-attachments/assets/fdda2ed4-4cfe-4b2b-93ef-5bea4389af13)
+
+kalian bisa memasukan nomor cc testing yang ada di [sini](https://docs.stripe.com/testing) untuk ngetest pembayaran kalian. dan jika berhasil akan di lempar ke link payment success seperti ini `http://localhost:3005/success?session_id=cs_test_a1JtjCinLvHaptStBNKG5tR60RyaCsGG9dKDcjgr40yR1e6SBlBzU9r6tq` dan jika gagal maka `http://localhost:3005/cancel?session_id=cs_test_a1JtjCinLvHaptStBNKG5tR60RyaCsGG9dKDcjgr40yR1e6SBlBzU9r6tq`
+
+
+
+
+
