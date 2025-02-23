@@ -872,9 +872,14 @@ Kalian juga bisa menggunakan alat seperti Postman atau WebSocket client lainnya:
 
 ### 4. Testing Simultan
 Untuk menguji aspek real-time:
-1. Buka beberapa jendela browser atau tab berbeda
-2. Hubungkan masing-masing ke aplikasi dengan username berbeda
-3. Kirim pesan dari satu klien dan verifikasi bahwa pesan tersebut muncul di semua klien lain secara instan
+1. Buka beberapa jendela browser atau tab berbeda dan buka link ini `http://localhost:3000/test`
+2. Jika sudah terbuka akan form seperti ini
+   ![image](https://github.com/user-attachments/assets/62f1a35e-a5f0-4a30-969e-86d120625329)
+
+4. Hubungkan masing-masing ke aplikasi dengan username berbeda
+5. Kirim pesan dari satu klien dan verifikasi bahwa pesan tersebut muncul di semua klien lain secara instan pada message log
+  ![image](https://github.com/user-attachments/assets/21672929-0bf5-4c46-a56d-7c4aaa07521f)
+
 
 ### 5. Testing Fitur Khusus
 - Coba hubungkan beberapa User dan kirim pesan antar mereka
