@@ -2010,7 +2010,8 @@ API Gateway adalah pintu gerbang utama yang mengatur semua lalu lintas masuk dan
 
 dalam kasus project kita, kita menghubungkan semua service mulai dari user, catalog, borrowing, loan dan notification service ke dalam satu service untuk mempermudah developer dalam mengkonsume API
 
-5. PM2
+6. PM2
+   
 PM2 adalah alat (process manager) yang digunakan untuk mengelola aplikasi Node.js atau Bun.js yang berjalan di server. Dengan PM2, Anda dapat menjalankan, memantau, dan mengelola aplikasi dengan mudah, sehingga membuat aplikasi lebih stabil dan efisien.
 
 Fungsi Utama PM2:
@@ -2021,3 +2022,9 @@ Fungsi Utama PM2:
 - Logging: Menyimpan log aktivitas aplikasi untuk debugging dan analisis.
 
 dalam kasus kita, kita menggunakan PM2 agar mudah memonitoring semua service jang sedang berjalan pada project kita. jika kita menemukan suatu error pada service tertentu maka akan mempermudah pengecekan dan memaintance service tertentu yang mengalami masalah tanpa harus mematikan semua service.
+
+![image](https://github.com/user-attachments/assets/6cba06d6-ff11-4763-9423-98b8e48d4d79)
+
+![image](https://github.com/user-attachments/assets/e396e981-8270-4afe-9dea-04c7d94ffee9)
+
+
