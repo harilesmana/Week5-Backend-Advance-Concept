@@ -1513,9 +1513,12 @@ jika kalian sudah selesai menulis codenya dan menjanlankan semua servicenya. mak
 kalian perlu menyalakan semua servicenya satu2 agar service bisa di jalankan di api gateway
 dan jika kalian membuka documentasi swagger pada api gateway local host `http://localhost:3000/docs`
 maka akan muncul seperti ini
-![alt text](image.png)
+![image](https://github.com/user-attachments/assets/409036a0-fdc4-44e1-88ad-3197a14890bc)
 
-dan kalian sudah bisa mengakses semua service dalam host ini
+
+dan untuk menjalankan testing yang sudah kita buat, kita perlu masuk ke directory service kalian dan jalankan `bun test` dan kalian akan mendapatkan log testing kurang lebih seperti ini
+![image](https://github.com/user-attachments/assets/de9f1e83-96fa-4397-be6f-194b2cc74d29)
+![image](https://github.com/user-attachments/assets/04461657-477e-4e98-b4fc-b69397a0b41c)
 
 ## PM2
 
@@ -1996,8 +1999,12 @@ jika berhasil makan kalian akan melihat table kalian di dalam cloudDB yang kalia
 3. Mailer dan RMQ (Rabit MQ)
 untuk mailer kita library js yang bernama nodemailer untuk pengiriman mail. dan untuk pengirimannya kita menggunakan Message Broker dari RabbitMQ yang berfungsi sebagai penghubung untuk memastikan pesan yang dikirim oleh satu layanan dapat diterima oleh layanan lain dengan aman, bahkan jika layanan itu berjalan secara asinkron atau tidak terhubung langsung.
 
+kalian bisa me manage RabbitMQ kalian dengan cara melihat manager UI kurang lebih akan seperti ini
 
-4. API Gateway
+![image](https://github.com/user-attachments/assets/aec13945-fc8c-473c-8b11-a4293a5d2a72)
+
+
+5. API Gateway
 
 API Gateway adalah pintu gerbang utama yang mengatur semua lalu lintas masuk dan keluar dari sistem microservices. Bayangkan seperti seorang "resepsionis" di sebuah gedung kantor besar yang mengarahkan pengunjung ke ruangan yang tepat.
 
