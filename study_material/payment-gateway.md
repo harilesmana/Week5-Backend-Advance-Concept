@@ -1571,17 +1571,34 @@ lalu kalian tinggal me running projectnya
 bun run dev
 ```
 
-jika berjalan mari kita test.
+jika berjalan mari kita test dengan menggunakan dokumentasi swagger `http://localhost:3000/swagger`
 
 1. buat sebuah fasility data untuk menambahkan fasility yang ada di ruangan yang akan kita buat nanti
-2. buat sebuah data ruangan menggunakan API service dari roomService dan jangan lupa masukan fasility id nya
+
+![image](https://github.com/user-attachments/assets/6ee2b009-d107-4363-9ffc-f9e10169ec8d)
+
+
+2. buat sebuah data ruangan menggunakan service dari roomService dan jangan lupa masukan fasility id nya
+
+![image](https://github.com/user-attachments/assets/9190f31d-7249-4f14-9313-c65f4638225b)
+
 3. jalankan service booking. jika kalian berhasil membuat pemesanan ruangan maka kalian akan mendapatkan link stripe seperti ini
+
+![image](https://github.com/user-attachments/assets/36e13f7f-e5d9-48ab-8514-0c4ac9d0ebb4)
+
 
 ```
 "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_test_a1XWu5n6MSWIWugnRUcSzTLSauxwzR7rkz7YwJUQB1tu3YRWpqoNW9ww5h#fidkdWxOYHwnPyd1blpxYHZxWjA0VGdpTE01M1BqPEs0RFRkfFc9ZEt9STB0aDExbFZzMn9sNzdvU0tCalF%2FREpQTXFjaGRMVU51fEZfMklhMWExXWlJTVVoYEBrVkxPQV1hUFVkS1NifXdyNTVAMGYxTkR2cCcpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl"
 ```
 
 jika kalian mendapatkan link tersebut kalian tinggal masuk ke halaman lalu lakukan pembayaran
+
+![image](https://github.com/user-attachments/assets/6cff5d8c-b596-4286-9b28-4da8c3a3b7ed)
+
+dan jika paymen berhasil akan masu ke link `localhost:3000/success` seperti yang kita atur untuk webhooknya
+
+![image](https://github.com/user-attachments/assets/0ae93147-2945-465a-bd3c-a244d589224d)
+
 
 ***NOTICE: UNTUK KASUS SEKARANG KITA MENGGUNAKAN SANDBOX JADI TIDAK PERLU MENGGUNAKAN KARTU KREDIT ASLI KALIAN UNTUK MENGETESTNYA***
 
