@@ -1,6 +1,6 @@
 # Project Study Microservice Synchronous
 
-kali ini kalian akan peraktekan untuk membuat aplikasi e-commerce system dengan 3 microservice yaitu Users, Product, dan Orders
+kali ini kalian akan peraktekan untuk membuat aplikasi e-commerce system dengan 3 microservice yaitu Users dan Orders
 dan juga untuk cycle nya kita akan menggunakan pm2 agar mudah di jalankan di lokal dan bisa juga untuk monitoring dan lagging
 ## Setup project
 
@@ -469,11 +469,13 @@ ketika kalian sudah selesai menulis code di atas kalian dapat menjalankan projec
 
 jika sudah running maka akan muncul seperti ini
 
-![alt text](image.png)
+![image](https://github.com/user-attachments/assets/fba4c6f0-e295-4bc2-86f2-56c5be68203c)
 
 jika status online maka service berhasil berjalan dengan baik jika tidak maka ada yang salah pada code kalian dan service tidak akan berjalan.
 
 lalu kemudian kalian bisa testing API kalian di dalam documentasi swagger gateway `http://localhost:3000/docs`
+
+![image](https://github.com/user-attachments/assets/bc47cf32-c4f1-4905-bdd3-0f2f29c7500e)
 
 jika terbuka maka kalian akan langsung mencoba api microservice sederhana kalian.
 
