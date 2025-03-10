@@ -171,8 +171,8 @@ project/
 │   │   │   └── 0000_initial.ts
 │   │   └── index.ts
 │   ├── services/
-│   │   ├── user.service.ts
-│   │   └── post.service.ts
+│   │   ├── user.services.ts
+│   │   └── post.services.ts
 │   ├── utils/
 │   │   └── response.ts
 │   └── index.ts
@@ -198,15 +198,16 @@ DATABASE_URL=postgres://user:password@ep-example-123456.us-east-2.aws.neon.tech/
   "version": "1.0.0",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "db:generate": "drizzle-kit generate:pg",
-    "db:push": "drizzle-kit push:pg"
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "drizzle-orm": "^0.28.0",
-    "@neondatabase/serverless": "^0.6.0"
+    "@neondatabase/serverless": "^0.6.0",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.38.3",
   },
   "devDependencies": {
-    "drizzle-kit": "^0.19.0",
+    "drizzle-kit": "^0.30.1",
     "bun-types": "latest"
   }
 }
@@ -271,9 +272,9 @@ export class ApiResponse {
 }
 ```
 
-- src/services/user.service.ts
+- src/services/user.services.ts
 ```js
-// src/services/user.service.ts
+// src/services/user.services.ts
 import { db } from '../db';
 import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
@@ -315,14 +316,60 @@ export class UserService {
 }
 ```
 
+- src/services/post.services.ts
+```
+// src/services/post.service.ts
+import { db } from '../db';
+import { posts } from '../db/schema/posts';
+import { eq } from 'drizzle-orm';
+
+export class PostService {
+    async getAllPosts() {
+        return await db.select().from(posts);
+    }
+
+    async getPostById(id: number) {
+        const result = await db.select()
+            .from(posts)
+            .where(eq(posts.id, id))
+            .limit(1);
+        return result[0];
+    }
+
+    async createPost(data: { title: string; content: string; userId: number }) {
+        const result = await db.insert(posts)
+            .values(data)
+            .returning();
+        return result[0];
+    }
+
+    async updatePost(id: number, data: Partial<{ title: string; content: string; isPublished: boolean }>) {
+        const result = await db.update(posts)
+            .set(data)
+            .where(eq(posts.id, id))
+            .returning();
+        return result[0];
+    }
+
+    async deletePost(id: number) {
+        const result = await db.delete(posts)
+            .where(eq(posts.id, id))
+            .returning();
+        return result[0];
+    }
+}
+```
+
 - src/index.ts
 ```js
 // src/index.ts
-import { UserService } from './services/user.service';
+import { UserService } from './services/user.services';
+import { PostService } from './services/post.services';
 import { ApiResponse } from './utils/response';
 
 // Initialize services
 const userService = new UserService();
+const postService = new PostService();
 
 // Create the server
 const server = Bun.serve({
@@ -390,6 +437,52 @@ const server = Bun.serve({
                 }
             }
 
+            // Posts endpoints
+            if (path.startsWith('/api/posts')) {
+                const id = path.split('/')[3]; // Get ID from path if present
+
+                // GET /api/posts
+                if (method === 'GET' && !id) {
+                    const posts = await postService.getAllPosts();
+                    return ApiResponse.json(posts);
+                }
+
+                // GET /api/posts/:id
+                if (method === 'GET' && id) {
+                    const post = await postService.getPostById(Number(id));
+                    if (!post) {
+                        return ApiResponse.json({ error: 'Post not found' }, 404);
+                    }
+                    return ApiResponse.json(post);
+                }
+
+                // POST /api/posts
+                if (method === 'POST') {
+                    const body = await req.json();
+                    const post = await postService.createPost(body);
+                    return ApiResponse.json(post, 201);
+                }
+
+                // PUT /api/posts/:id
+                if (method === 'PUT' && id) {
+                    const body = await req.json();
+                    const post = await postService.updatePost(Number(id), body);
+                    if (!post) {
+                        return ApiResponse.json({ error: 'Post not found' }, 404);
+                    }
+                    return ApiResponse.json(post);
+                }
+
+                // DELETE /api/posts/:id
+                if (method === 'DELETE' && id) {
+                    const post = await postService.deletePost(Number(id));
+                    if (!post) {
+                        return ApiResponse.json({ error: 'Post not found' }, 404);
+                    }
+                    return new Response(null, { status: 204 });
+                }
+            }
+
             // Handle 404 for unknown routes
             return ApiResponse.json({ error: 'Not Found' }, 404);
 
@@ -401,6 +494,7 @@ const server = Bun.serve({
 });
 
 console.log(`Server running at http://localhost:${server.port}`);
+
 ```
 
 - drizzle.config.ts
@@ -409,19 +503,38 @@ console.log(`Server running at http://localhost:${server.port}`);
 import type { Config } from 'drizzle-kit';
 
 export default {
-    schema: './src/db/schema/*',
-    out: './src/db/migrations',
-    driver: 'pg',
-    dbCredentials: {
-        connectionString: process.env.DATABASE_URL!,
-    },
+  dialect: "postgresql",
+  schema: './src/db/schema/*',
+  out: './src/db/migrations',
+  dbCredentials: {
+      url: process.env.DATABASE_URL!,
+  },
+  verbose: true,
+  strict: true,
+  push: {
+    mode: "safe" // This prevents dropping tables
+  },
+  defaultSchemaName: "public"
 } satisfies Config;
 ```
 
 ## 4. Running code
-sebelum kalian jalankan projectnya, kalian harus migrasi dulu database kalian
+sebelum kalian jalankan projectnya, kalian harus migrasi dulu database kalian. disini lah peran drizzle untuk mengintegrasikan aplikasi ke database kalian. pertama kita akan generate schema dengan
 ```
 bun run db:generate
+// atau
+drizzle-kit generate:pg
+```
+jika berjalan akan muncul seperti ini.
+![image](https://github.com/user-attachments/assets/a3291518-1488-46d2-ad9d-cf3b8d6ef4fd)
+
+jika berhasil file migrasi nya akan muncul di `src/db/migrations` kurang lebih seperti ini
+![image](https://github.com/user-attachments/assets/67dd3ede-9725-4340-a24b-179f3da4b8d8)
+
+dan di ada sebuah file seperti `0000_outstanding_gargoyle` ini jika dilihat file ini dalam bentuk sql. itu adalah hasil dari generate shcema yang kita buat.
+
+jika sudah seperti ini tinggal kita push saja
+```
 bun run db:push
 ```
 
@@ -429,4 +542,9 @@ baru lalu kalian bisa jalankan projectnya
 ```
 bun run dev
 ```
+dan hasilnya akan seperti ini
+![image](https://github.com/user-attachments/assets/1403bd6e-ff81-474e-89fd-873a23876217)
+
+jika sudah berhasil kalian bisa mengecheck db table kalian di website neonDb kalian dan akan muncul dbnya
+![image](https://github.com/user-attachments/assets/f58cfee1-4c8d-4869-8044-c9ec15b5885c)
 
