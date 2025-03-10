@@ -548,3 +548,6 @@ dan hasilnya akan seperti ini
 jika sudah berhasil kalian bisa mengecheck db table kalian di website neonDb kalian dan akan muncul dbnya
 ![image](https://github.com/user-attachments/assets/f58cfee1-4c8d-4869-8044-c9ec15b5885c)
 
+lalu kalian tinggal jalankan program kalain `bun dev` dan aplikasi akan bekerja
+
+
